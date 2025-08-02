@@ -36,10 +36,7 @@
       {%- if section.settings.show_share_links -%}
         <div class="social-share flex items-center">
           <p class="social-share__heading mb-0 font-bold">{{ 'general.social.share_heading' | t }}:</p>
-          {% render 'social-share', 
-            share_twitter: section.settings.show_twitter,
-            share_facebook: section.settings.show_facebook,
-            share_title: blog.title, share_url: blog.url %}
+          {% render 'social-share', share_title: blog.title, share_url: blog.url %}
         </div>
       {%- endif -%}
     </div>
@@ -173,18 +170,6 @@
       "type": "checkbox",
       "id": "show_share_links",
       "label": "Show social share links",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_twitter",
-      "label": "Show X (formerly Twitter)",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_facebook",
-      "label": "Show Facebook",
       "default": true
     },
     {

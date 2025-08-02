@@ -69,12 +69,7 @@
     assign section_bg_color = settings.color_scheme_3_bg
   endif
 
-  if section_bg_color and section_bg_color != settings.bg_color
-    assign section_bg_alpha = bg_color | color_extract: 'alpha'
-    unless section_bg_alpha > 0
-      assign section_bg_color = false
-    endunless
-  else
+  if section_bg_color == settings.bg_color or section_bg_color == 'rgba(0,0,0,0)'
     assign section_bg_color = false
   endif
 -%}
@@ -147,6 +142,7 @@
                     image: img,
                     widths: '480, 800, 980, 1200, 1440',
                     src_width: 800,
+                    src_placeholder: true,
                     sizes: sizes,
                     quality: 1,
                     section_index: section.index,

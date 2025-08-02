@@ -29,11 +29,8 @@
     assign bg_color = settings.color_scheme_3_bg_grad | default: settings.color_scheme_3_bg
   endif
 
-  if bg_color
-    assign bg_alpha = bg_color | color_extract: 'alpha'
-    if bg_alpha == 0
-      assign bg_color = false
-    endif
+  if bg_color == 'rgba(0,0,0,0)'
+    assign bg_color = false
   endif
 
   if bg_color and section.settings.image == blank
@@ -100,6 +97,7 @@
           image: section.settings.image,
           widths: '750, 856, 1440, 1680, 1920, 2560',
           src_width: 1680,
+          src_placeholder: true,
           sizes: sizes,
           class: 'img-fit'
         %}

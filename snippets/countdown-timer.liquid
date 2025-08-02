@@ -29,7 +29,7 @@
   elsif end_midnight
     assign now = "now" | date: '%Y-%m-%dT%H:%M%z'
     assign now_split = now | split: "T"
-    assign end_date = now_split.first | append: "T23:59" | date: '%Y-%m-%dT%H:%M%z'
+    assign end_date = now_split.first | append: "T23:59%z" | date: '%Y-%m-%dT%H:%M%z'
   endif
 
   assign a11y_end_date = end_date | date: format: 'date_at_time'

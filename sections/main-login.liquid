@@ -4,16 +4,6 @@
       <h1 class="h2">{{ 'customer.login.title' | t }}</h1>
     </div>
 
-    {%- if section.settings.enable_shop_login_button -%}
-      <div class="text-center">
-        {{- shop | login_button -}}
-
-        <p class="mt-4 mb-4">
-          {{ 'customer.login.alternate_provider_separator' | t }}
-        </p>
-      </div>
-    {%- endif -%}
-
     {%- form 'customer_login', class: 'form form-width mx-auto', novalidate: 'novalidate' -%}
       {%- if form.errors -%}
         <div class="alert mb-8 bg-error-bg text-error-text" tabindex="-1" autofocus>
@@ -152,18 +142,6 @@
 {% schema %}
 {
   "name": "Login",
-  "class": "cc-main-login section section--template",
-  "settings": [
-    {
-      "type": "header",
-      "content": "Sign in with Shop settings"
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_shop_login_button",
-      "label": "Enable Sign in with Shop",
-      "default": false
-    }
-  ]
+  "class": "cc-main-login section section--template"
 }
 {% endschema %}

@@ -103,9 +103,9 @@
                     </dt>
                     <dd class="inline m-0">
                       {%- if variant_price_reduced -%}
-                        <span class="price__was{% if settings.superscript_decimals %} price__was--supercents{% endif %} line-through">{%- render 'price-as-money', price: item.variant.compare_at_price, show_money_with_currency: false -%}</span>
+                        <s class="price__was{% if settings.superscript_decimals %} price__was--supercents{% endif %}">{%- render 'price-as-money', price: item.variant.compare_at_price, show_money_with_currency: false -%}</s>
                       {%- else -%}
-                        <span class="price__was{% if settings.superscript_decimals %} price__was--supercents{% endif %} line-through">{%- render 'price-as-money', price: item.original_price, show_money_with_currency: false -%}</span>
+                        <s class="price__was{% if settings.superscript_decimals %} price__was--supercents{% endif %}">{%- render 'price-as-money', price: item.original_price, show_money_with_currency: false -%}</s>
                       {%- endif -%}
                     </dd>
                   </dl>
@@ -140,7 +140,7 @@
                   </div>
                 {%- endif -%}
 
-                {%- if item.product.has_only_default_variant == false or item.properties != empty or item.selling_plan_allocation != nil -%}
+                {%- if item.product.has_only_default_variant == false or item.properties.size != 0 or item.selling_plan_allocation != nil -%}
                   <div class="cart-item__variants text-sm">
                     <dl class="mt-2 mb-0">
                       {%- if item.product.has_only_default_variant == false -%}
@@ -221,14 +221,14 @@
                   </dt>
                   <dd class="m-0">
                     {%- if variant_price_reduced -%}
-                      <span class="price__was{% if settings.superscript_decimals %} price__was--supercents{% endif %} line-through">
+                      <s class="price__was{% if settings.superscript_decimals %} price__was--supercents{% endif %}">
                         {%- liquid
                           assign compare_at_total_price = item.variant.compare_at_price | times: item.quantity
                           render 'price-as-money', price: compare_at_total_price, show_money_with_currency: false
                         -%}
-                      </span>
+                      </s>
                     {%- else -%}
-                      <span class="price__was{% if settings.superscript_decimals %} price__was--supercents{% endif %} line-through">{%- render 'price-as-money', price: item.original_line_price, show_money_with_currency: false -%}</span>
+                      <s class="price__was{% if settings.superscript_decimals %} price__was--supercents{% endif %}">{%- render 'price-as-money', price: item.original_line_price, show_money_with_currency: false -%}</s>
                     {%- endif -%}
                   </dd>
                 </dl>

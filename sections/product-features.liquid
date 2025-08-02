@@ -9,7 +9,8 @@
 {%- liquid
   assign color_scheme = section.settings.color_scheme
   assign hotspot_color_brightness = section.settings.hotspot_color | color_brightness
-  assign image = section.settings.image | default: section.settings.product.featured_image
+  assign image_desktop = section.settings.image_desktop | default: section.settings.product.featured_image
+  assign image_mobile = section.settings.image_mobile | default: image_desktop
   assign title = section.settings.title | default: section.settings.product.title
   assign description = section.settings.description | default: section.settings.product.description
 -%}
@@ -22,6 +23,28 @@
     {%- else -%}
       --hotspot-cross-color: #fff;
     {%- endif %}
+  }
+  
+  /* Mobile Image Styles */
+  #{{ section.id }} .product-features__image--mobile {
+    display: none;
+  }
+  
+  @media (max-width: 767px) {
+    #{{ section.id }} .product-features__image--desktop {
+      display: none;
+    }
+    #{{ section.id }} .product-features__image--mobile {
+      display: block;
+    }
+    
+    /* Mobile Hotspot Positions */
+    {%- for block in section.blocks -%}
+      #{{ section.id }} .hotspot--{{ forloop.index }} {
+        top: {{ block.settings.hotspot_y_mobile | default: block.settings.hotspot_y }}% !important;
+        left: {{ block.settings.hotspot_x_mobile | default: block.settings.hotspot_x }}% !important;
+      }
+    {%- endfor -%}
   }
 {% endstyle %}
 
@@ -61,13 +84,15 @@
       {{ section_content_html }}
     {%- endif -%}
     <div class="product-features relative">
-      <hotspots-image class="product-features__image block relative overflow-hidden"{% if settings.animations_enabled != "disabled" %} data-cc-animate{% endif %}>
-        {%- if image != blank -%}
+      
+      <!-- Desktop Image -->
+      <hotspots-image class="product-features__image product-features__image--desktop block relative overflow-hidden"{% if settings.animations_enabled != "disabled" %} data-cc-animate{% endif %}>
+        {%- if image_desktop != blank -%}
           {%- capture sizes -%}
             {%- render 'sizes-attribute', min: 'page', sm: 'page', md: false, lg: false, xl: '1400px', max: false -%}
           {%- endcapture -%}
           {% render 'image',
-            image: image,
+            image: image_desktop,
             widths: '480, 980, 1200, 1400, 1600, 1920, 2560, 3200',
             src_width: 1200,
             sizes: sizes,
@@ -82,7 +107,7 @@
         {%- endif -%}
 
         {%- for block in section.blocks -%}
-          <div class="hotspot absolute" data-x="{{ block.settings.hotspot_x }}" data-y="{{ block.settings.hotspot_x }}" style="top: {{ block.settings.hotspot_y }}%; left: {{ block.settings.hotspot_x }}%">
+          <div class="hotspot hotspot--{{ forloop.index }} absolute" data-x="{{ block.settings.hotspot_x }}" data-y="{{ block.settings.hotspot_y }}" style="top: {{ block.settings.hotspot_y }}%; left: {{ block.settings.hotspot_x }}%">
             <button type="button" class="hotspot__btn relative tap-target no-js-hidden" aria-expanded="false">
               <span class="visually-hidden">
                 {{- 'accessibility.view_details' | t }}
@@ -112,6 +137,57 @@
           </div>
         {% endfor %}
       </hotspots-image>
+
+      <!-- Mobile Image -->
+      <hotspots-image class="product-features__image product-features__image--mobile block relative overflow-hidden"{% if settings.animations_enabled != "disabled" %} data-cc-animate{% endif %}>
+        {%- if image_mobile != blank -%}
+          {% render 'image',
+            image: image_mobile,
+            widths: '480, 980, 1200',
+            src_width: 480,
+            sizes: '100vw',
+            quality: 1,
+            section_index: section.index,
+            class: 'block mx-auto w-full'
+          %}
+        {%- else -%}
+          <div class="media relative" style="padding-top: 56.25%;">
+            {{ 'product-2' | placeholder_svg_tag: 'media__placeholder img-fit' }}
+          </div>
+        {%- endif -%}
+
+        {%- for block in section.blocks -%}
+          <div class="hotspot hotspot--{{ forloop.index }} absolute" data-x="{{ block.settings.hotspot_x_mobile | default: block.settings.hotspot_x }}" data-y="{{ block.settings.hotspot_y_mobile | default: block.settings.hotspot_y }}" style="top: {{ block.settings.hotspot_y_mobile | default: block.settings.hotspot_y }}%; left: {{ block.settings.hotspot_x_mobile | default: block.settings.hotspot_x }}%">
+            <button type="button" class="hotspot__btn relative tap-target no-js-hidden" aria-expanded="false">
+              <span class="visually-hidden">
+                {{- 'accessibility.view_details' | t }}
+              </span>
+              {% render 'icon-plus' %}
+            </button>
+            <div class="hotspot__card hotspot__card--wide absolute no-js-hidden {{ block.settings.content_align }}" aria-hidden="true">
+              {%- if block.settings.image != empty -%}
+                {%- liquid
+                  if block.settings.image.width > 320
+                    assign src_width = 320
+                  else
+                    assign src_width = block.settings.image.width
+                  endif
+                -%}
+                {% render 'image', image: block.settings.image, src_width: src_width, srcset_2x: true, class: 'mb-4' %}
+              {%- endif -%}
+              {%- if block.settings.heading != empty -%}
+                <h6>{{ block.settings.heading }}</h6>
+              {%- endif -%}
+              {%- if block.settings.text != empty -%}
+                <div class="rte">
+                  {{ block.settings.text }}
+                </div>
+              {%- endif -%}
+            </div>
+          </div>
+        {% endfor %}
+      </hotspots-image>
+      
     </div>
     {%- if section.settings.layout == 'text_last' and section.settings.show_content == true -%}
       {{ section_content_html }}
@@ -129,7 +205,7 @@
       "type": "product",
       "id": "product",
       "label": "Product",
-      "info": "Product image may be enlarged. You can replace the default product image with the \"Image\" setting."
+      "info": "Product image may be enlarged. You can replace the default product image with the 'Image' setting."
     },
     {
       "type": "header",
@@ -231,9 +307,15 @@
     },
     {
       "type": "image_picker",
-      "id": "image",
-      "label": "Image",
-      "info": "Replaces the default product image. For best results, use a landscape shaped image with a width of 1920px."
+      "id": "image_desktop",
+      "label": "Desktop Image",
+      "info": "Replaces the default product image on desktop. For best results, use a landscape shaped image with a width of 1920px."
+    },
+    {
+      "type": "image_picker",
+      "id": "image_mobile",
+      "label": "Mobile Image",
+      "info": "Separate image for mobile devices. If not set, desktop image will be used. For best results, use a square or portrait image optimized for mobile."
     },
     {
       "type": "text",
@@ -314,7 +396,7 @@
       "default": "btn btn--primary"
     }
   ],
-  "max_blocks": 5,
+  "max_blocks": 10,
   "blocks": [
     {
       "type": "feature",
@@ -359,9 +441,13 @@
           "default": "text-start"
         },
         {
+          "type": "header",
+          "content": "Desktop Position"
+        },
+        {
           "type": "range",
           "id": "hotspot_x",
-          "label": "Horizontal position",
+          "label": "Desktop - Horizontal position",
           "min": 10,
           "max": 90,
           "unit": "%",
@@ -371,12 +457,38 @@
         {
           "type": "range",
           "id": "hotspot_y",
-          "label": "Vertical position",
+          "label": "Desktop - Vertical position",
           "min": 10,
           "max": 90,
           "unit": "%",
           "step": 1,
           "default": 50
+        },
+        {
+          "type": "header",
+          "content": "Mobile Position"
+        },
+        {
+          "type": "range",
+          "id": "hotspot_x_mobile",
+          "label": "Mobile - Horizontal position",
+          "min": 10,
+          "max": 90,
+          "unit": "%",
+          "step": 1,
+          "default": 50,
+          "info": "If not set, desktop position will be used"
+        },
+        {
+          "type": "range",
+          "id": "hotspot_y_mobile",
+          "label": "Mobile - Vertical position",
+          "min": 10,
+          "max": 90,
+          "unit": "%",
+          "step": 1,
+          "default": 50,
+          "info": "If not set, desktop position will be used"
         }
       ]
     }
@@ -392,21 +504,27 @@
           "type": "feature",
           "settings": {
             "hotspot_x": 28,
-            "hotspot_y": 38
+            "hotspot_y": 38,
+            "hotspot_x_mobile": 25,
+            "hotspot_y_mobile": 35
           }
         },
         {
           "type": "feature",
           "settings": {
             "hotspot_x": 60,
-            "hotspot_y": 23
+            "hotspot_y": 23,
+            "hotspot_x_mobile": 65,
+            "hotspot_y_mobile": 20
           }
         },
         {
           "type": "feature",
           "settings": {
             "hotspot_x": 73,
-            "hotspot_y": 54
+            "hotspot_y": 54,
+            "hotspot_x_mobile": 70,
+            "hotspot_y_mobile": 60
           }
         }
       ]

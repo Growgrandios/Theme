@@ -4,10 +4,6 @@
   {{ 'product.css' | asset_url | stylesheet_tag }}
 {%- endif -%}
 
-{%- if settings.card_hover_action == 'slideshow' -%}
-  <script src="{{ 'product-card-image-slider.js' | asset_url }}" defer="defer"></script>
-{%- endif -%}
-
 {%- if settings.enable_quick_add -%}
   <link rel="stylesheet" href="{{ 'quick-add.css' | asset_url }}" media="print" onload="this.media='all'">
   <script src="{{ 'quick-add.js' | asset_url }}" defer="defer"></script>
@@ -81,18 +77,6 @@
       <carousel-slider class="carousel block" inactive{% if section.settings.layout == 'carousel_on_mobile' %} disable-desktop="true"{% endif %}>
         <div class="container relative">
           <div class="slider" id="slider-{{ section.id }}">
-          {%- if settings.slider_show_arrows != 'never' -%}
-            <div class="slider-nav absolute top-middle end {% if settings.slider_show_arrows == 'hover' %}slider-nav--show-on-hover no-hover-hidden {% endif %}hidden md:block no-js-hidden">
-              <button type="button" class="slider-nav__btn tap-target btn {{ settings.slider_button_style }} has-ltr-icon" name="next" aria-controls="slider-{{ section.id }}">
-                <span class="visually-hidden">{{ 'general.slider.next' | t }}</span>
-                {% render 'icon-chevron-right' %}
-              </button>
-              <button type="button" class="slider-nav__btn tap-target btn {{ settings.slider_button_style }} has-ltr-icon" name="prev" aria-controls="slider-{{ section.id }}">
-                <span class="visually-hidden">{{ 'general.slider.previous' | t }}</span>
-                {% render 'icon-chevron-left' %}
-              </button>
-            </div>
-          {%- endif -%}
     {%- endif -%}
 
     <div class="container products-grid-container">
@@ -107,6 +91,18 @@
 
     {%- if carousel -%}
           </div>
+          {%- if settings.slider_show_arrows != 'never' -%}
+            <div class="slider-nav absolute top-middle end {% if settings.slider_show_arrows == 'hover' %}slider-nav--show-on-hover no-hover-hidden {% endif %}hidden md:block no-js-hidden">
+              <button type="button" class="slider-nav__btn tap-target btn {{ settings.slider_button_style }} has-ltr-icon" name="next" aria-controls="slider-{{ section.id }}">
+                <span class="visually-hidden">{{ 'general.slider.next' | t }}</span>
+                {% render 'icon-chevron-right' %}
+              </button>
+              <button type="button" class="slider-nav__btn tap-target btn {{ settings.slider_button_style }} has-ltr-icon" name="prev" aria-controls="slider-{{ section.id }}">
+                <span class="visually-hidden">{{ 'general.slider.previous' | t }}</span>
+                {% render 'icon-chevron-left' %}
+              </button>
+            </div>
+          {%- endif -%}
         </div>
       </carousel-slider>
     {%- endif -%}
@@ -135,6 +131,8 @@
             if (el && el.hasChildNodes()) {
               this.innerHTML = el.innerHTML;
             }
+
+            window.initLazyImages();
           } catch (error) {
             this.fetchAttempts += 1;
 
@@ -166,7 +164,7 @@
 {
   "name": "Recently viewed products",
   "tag": "section",
-  "class": "cc-recently-viewed cc-product-card-grid",
+  "class": "cc-recently-viewed",
   "settings": [
     {
       "type": "paragraph",

@@ -148,6 +148,7 @@ if (!customElements.get('custom-pagination')) {
             newResultsHtml += result.outerHTML;
           });
           lastResult.insertAdjacentHTML('afterend', newResultsHtml);
+          window.initLazyImages();
           this.results = this.querySelectorAll('.js-pagination-result');
 
           // Update the pagination content

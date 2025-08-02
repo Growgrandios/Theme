@@ -22,13 +22,6 @@
         {%- assign is_first_disclosure = true -%}
         {%- for block in section.blocks -%}
           {%- case block.type -%}
-            {% when '@app' %}
-              <div class="footer-col footer-col--app footer-col--not-collapsed" {{ block.shopify_attributes }}{% if settings.animations_enabled != "disabled" %} data-cc-animate data-cc-animate-delay="{{ forloop.index | times: 0.07 }}s"{% endif %}>
-                <div class="footer-block mb-8">
-                  {% render block %}
-                </div>
-              </div>
-
             {%- when 'text' -%}
               <div class="footer-col footer-col--text footer-col--not-collapsed{% if section.blocks.size == 1 %} footer-col--text-full-width{% endif %}" {{ block.shopify_attributes }}{% if settings.animations_enabled != "disabled" %} data-cc-animate data-cc-animate-delay="{{ forloop.index | times: 0.07 }}s"{% endif %}>
                 <div class="footer-block mb-8 {{ block.settings.text_align }}">
@@ -98,9 +91,7 @@
                       <div class="disclosure__panel has-motion">
                         <div class="disclosure__content">
                           {%- if block.settings.text != blank -%}
-                            <div class="rte">
-                              {{ block.settings.text }}
-                            </div>
+                            {{ block.settings.text }}
                           {%- endif -%}
 
                           {% render 'newsletter-signup', id: 'footer-signup', arrow_button: true, tags: 'newsletter' %}
@@ -118,9 +109,7 @@
                     </h2>
 
                     {%- if block.settings.text != blank -%}
-                      <div class="rte">
-                        {{ block.settings.text }}
-                      </div>
+                      {{ block.settings.text }}
                     {%- endif -%}
 
                     {% render 'newsletter-signup', id: 'footer-signup', arrow_button: true, tags: 'newsletter' %}
@@ -316,9 +305,6 @@
   ],
   "max_blocks": 4,
   "blocks": [
-    {
-      "type": "@app"
-    },
     {
       "type": "link_list",
       "name": "Footer menu",

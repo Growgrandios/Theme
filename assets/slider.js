@@ -15,8 +15,7 @@ function debounce(fn, wait = 300) {
 class CarouselSlider extends HTMLElement {
   constructor() {
     super();
-    // Get slides, ignoring nested .slider__item elements
-    this.slides = this.querySelector('.slider__item').parentElement.children;
+    this.slides = this.querySelectorAll('.slider__item');
     if (this.slides.length < 2) return;
 
     window.initLazyScript(this, this.init.bind(this));
@@ -25,12 +24,12 @@ class CarouselSlider extends HTMLElement {
   init() {
     this.slider = this.querySelector('.slider');
     this.grid = this.querySelector('.slider__grid');
-    this.nav = this.querySelector(`.slider-nav__btn[aria-controls='${this.slider.id}']`)?.closest('.slider-nav');
+    this.nav = this.querySelector('.slider-nav');
     this.rtl = document.dir === 'rtl';
 
     if (this.nav) {
-      this.prevBtn = this.nav.querySelector('button[name="prev"]');
-      this.nextBtn = this.nav.querySelector('button[name="next"]');
+      this.prevBtn = this.querySelector('button[name="prev"]');
+      this.nextBtn = this.querySelector('button[name="next"]');
     }
 
     this.initSlider();

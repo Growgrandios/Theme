@@ -334,6 +334,7 @@
  *
  *  - setImageSources function - copies the data-src and data-srcset attributes of lazy loaded
  *    images to their src and srcset attributes.
+ *  - initLazyImages function - uses the IntersectionObserver API to lazy load images when needed.
  *  - initLazyScript function - only loads a script when a specific element is scrolled into view.
  *
  *

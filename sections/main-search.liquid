@@ -1,10 +1,6 @@
 {{ 'products-grid.css' | asset_url | stylesheet_tag }}
 {{ 'product.css' | asset_url | stylesheet_tag }}
 
-{%- if settings.card_hover_action == 'slideshow' -%}
-  <script src="{{ 'product-card-image-slider.js' | asset_url }}" defer="defer"></script>
-{%- endif -%}
-
 {%- if settings.enable_quick_add -%}
   <link rel="stylesheet" href="{{ 'quick-add.css' | asset_url }}" media="print" onload="this.media='all'">
   <script src="{{ 'quick-add.js' | asset_url }}" defer="defer"></script>
@@ -120,9 +116,9 @@
                 assign image_ratio = settings.prod_card_image_ratio
               endif
             -%}
-            <ul class="grid mb-8 md:mb-12 {% if section.settings.filters_open_lg %}{{ grid_classes_filters_open }}{% else %}{{ grid_classes_filters_closed }}{% endif %} gap-x-theme {% if settings.card_contain %}gap-y-5 md:gap-y-8{% else %}gap-y-10{% endif %}"
-                data-filters-open-classes="grid mb-8 md:mb-12 {{ grid_classes_filters_open }} gap-x-theme {% if settings.card_contain %}gap-y-5 md:gap-y-8{% else %}gap-y-10{% endif %}"
-                data-filters-closed-classes="grid mb-8 md:mb-12 {{ grid_classes_filters_closed }} gap-x-theme {% if settings.card_contain %}gap-y-5 md:gap-y-8{% else %}gap-y-10{% endif %}" role="list">
+            <ul class="grid mb-8 md:mb-12 {% if section.settings.filters_open_lg %}{{ grid_classes_filters_open }}{% else %}{{ grid_classes_filters_closed }}{% endif %} gap-x-theme {% if settings.card_contain %}gap-y-8{% else %}gap-y-10{% endif %}"
+                data-filters-open-classes="grid mb-8 md:mb-12 {{ grid_classes_filters_open }} gap-x-theme {% if settings.card_contain %}gap-y-8{% else %}gap-y-10{% endif %}"
+                data-filters-closed-classes="grid mb-8 md:mb-12 {{ grid_classes_filters_closed }} gap-x-theme {% if settings.card_contain %}gap-y-8{% else %}gap-y-10{% endif %}" role="list">
               {%- for item in search.results -%}
                 <li class="js-pagination-result">
                   {%- case item.object_type -%}
@@ -276,7 +272,7 @@
       "type": "checkbox",
       "id": "enable_filtering",
       "label": "Enable filtering",
-      "info": "[Customize filters](https://help.shopify.com/manual/online-store/search-and-discovery/filters)",
+      "info": "[Customize filters](/admin/menus)",
       "default": true
     },
     {

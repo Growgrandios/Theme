@@ -40,6 +40,7 @@
 }
 
 .product-comparison-grid__sticky {
+  position: -webkit-sticky;
   position: sticky;
   left: 20px;
 }
@@ -113,12 +114,6 @@ tbody .product-comparison-grid__th--left::after,
 
 .product-comparison-slider {
   --scrollbar-color: var(--text-color-og);
-}
-
-.product-comparison-grid .card__swatches input:checked + .opt-label--swatch,
-.product-comparison-grid .card__swatches input:checked + .filter__label[data-swatch]::before {
-  border: 1px solid rgb(var(--swatch-border-color-default));
-  box-shadow: none;
 }
 
 @media (max-width: 768.98px) {

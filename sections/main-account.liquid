@@ -67,6 +67,19 @@
 
       <div class="mt-16 text-center">
         <h2 class="h3">{{ 'customer.account.details' | t }}</h2>
+
+        {%- comment -%} NEU: Anzeige des Geburtsdatums im Kundenkonto (immer sichtbar) {%- endcomment -%}
+        <div class="customer-birthdate-display" style="margin-top: 10px; margin-bottom: 25px; padding-bottom:15px; border-bottom: 1px solid #e5e5e5;">
+          <h4 style="font-size: 1.0em; margin-bottom: 8px; color: #555;">Gespeichertes Geburtsdatum</h4>
+          {%- if customer.metafields.custom.birth_date.value != blank -%}
+            <p style="margin: 0; font-size: 0.95em;">{{ customer.metafields.custom.birth_date.value | date: "%d.%m.%Y" }}</p>
+            <p style="margin-top: 5px; font-size: 0.85em; color: #777;">Dieses Datum wurde für die Altersverifizierung hinterlegt und kann hier nicht geändert werden.</p>
+          {%- else -%}
+            <p style="margin: 0; font-size: 0.95em; color: #777;">Es wurde noch kein Geburtsdatum für die Altersverifizierung hinterlegt.</p>
+          {%- endif -%}
+        </div>
+        {%- comment -%} ENDE NEU {%- endcomment -%}
+
         <div class="address-box mt-6 mx-auto">
           {{ customer.default_address | format_address }}
           <a class="link" href="{{ routes.account_addresses_url }}">

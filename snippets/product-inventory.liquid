@@ -16,11 +16,7 @@
      data-variant-available="{{ current_variant.available }}"
      data-inventory-quantity="{{ current_variant.inventory_quantity | at_least: 0 }}"
      data-inventory-policy="{{ current_variant.inventory_policy | escape }}"
-     data-scale="35"
-     {% if current_variant == false %}
-        hidden
-     {% endif %}
->
+     data-scale="35">
   {% if product and product != empty %}
     <div class="product-inventory__text">
       <span class="product-inventory__status js-inventory-notice"></span>

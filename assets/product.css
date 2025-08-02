@@ -67,7 +67,7 @@
 
 .opt-label__media {
   width: 100%;
-  border-radius: calc(var(--btn-border-radius, 0) - 2px);
+  border-radius: var(--btn-border-radius, 0);
 }
 
 .custom-select__btn[data-swatch]::before,
@@ -88,10 +88,6 @@
   min-width: 64px;
   transition: opacity 0.6s, color 0.6s, border-color 0.6s;
   font-weight: bold;
-}
-
-.opt-label__media {
-  border-radius: var(--btn-border-radius, 0);
 }
 
 .option-selector:not(:last-child) {
@@ -194,14 +190,6 @@
   display: none;
 }
 
-.product-info__block.custom-option + .product-info__block.custom-option {
-  margin-top: 3rem;
-}
-
-.product-info__block.custom-option {
-  margin-bottom: 2px;
-}
-
 .product-info__block .social__link {
   width: 40px;
   height: 40px;
@@ -264,22 +252,11 @@
 }
 
 .product-info__add-button {
-  display: flex;
   flex: 0 0 100%;
 }
 quantity-input + .product-info__add-button {
   flex: 1 1 65%;
   margin-inline-start: calc(2 * var(--space-unit));
-}
-
-.product-info__dynamic-checkout-button shopify-accelerated-checkout {
-  --shopify-accelerated-checkout-button-block-size: 45px;
-  --shopify-accelerated-checkout-button-border-radius: var(--btn-border-radius, 0);
-  --shopify-accelerated-checkout-button-box-shadow: none;
-  --shopify-accelerated-checkout-skeleton-background-color: rgba(0, 0, 0, 0);
-  --shopify-accelerated-checkout-skeleton-animation-opacity-start: 0;
-  --shopify-accelerated-checkout-skeleton-animation-opacity-end: 0;
-  --shopify-accelerated-checkout-skeleton-animation-duration: 0s;
 }
 
 .product-info__disclosure {
@@ -380,15 +357,6 @@ quantity-input + .product-info__add-button {
   margin-bottom: 0;
 }
 
-.tab-used .product-info__block .media {
-  overflow: visible;
-}
-.tab-used .product-info__block .media a:focus {
-  outline: auto Highlight;
-  outline: auto -webkit-focus-ring-color;
-  outline-offset: 3px;
-}
-
 @media (max-width: 768.98px) {
   .product-info.media-with-text__text {
     padding-top: 0;
@@ -415,13 +383,6 @@ quantity-input + .product-info__add-button {
   }
   .cc-featured-product .media-with-text__text {
     max-width: calc(100% - var(--media-width, 50%));
-  }
-  .cc-featured-product:has(custom-select.is-open) .container.overflow-hidden {
-    overflow: visible;
-  }
-  .cc-featured-product:has(custom-select.is-open) {
-    position: relative;
-    z-index: 4;
   }
 }
 @media (min-width: 1024px) {

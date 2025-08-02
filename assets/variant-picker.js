@@ -20,16 +20,10 @@ if (!customElements.get('variant-picker')) {
       this.optionSelectors = this.querySelectorAll('.option-selector');
       this.data = this.getProductData();
       this.variant = this.getSelectedVariant();
-      this.selectedOptions = this.getSelectedOptions();
-      this.preSelection = !this.variant && this.selectedOptions.find((o) => o === null) === null;
 
+      this.updateAvailability();
+      this.updateAddToCartButton();
       this.addEventListener('change', this.handleVariantChange.bind(this));
-
-      // Defer these to allow for quick-add modal to full initialize
-      setTimeout(() => {
-        this.updateAvailability();
-        this.updateAddToCartButton();
-      });
     }
 
     /**
@@ -37,9 +31,10 @@ if (!customElements.get('variant-picker')) {
      * @param {object} evt - Event object.
      */
     handleVariantChange(evt) {
-      this.selectedOptions = this.getSelectedOptions();
+      this.variant = null;
+
+      // Get selected variant data (if variant exists).
       this.variant = this.getSelectedVariant();
-      this.preSelection = !this.variant && this.selectedOptions.find((o) => o === null) === null;
 
       if (this.variant) {
         this.updateMedia();
@@ -55,28 +50,16 @@ if (!customElements.get('variant-picker')) {
       this.updateBackorderText();
       this.updatePickupAvailability();
       this.updateSku();
-      this.updateMetafieldVisibility();
       VariantPicker.updateLabelText(evt);
 
-      if (!this.preSelection) {
-        this.dispatchEvent(new CustomEvent('on:variant:change', {
-          bubbles: true,
-          detail: {
-            form: this.productForm,
-            variant: this.variant,
-            product: this.data.product
-          }
-        }));
-      }
-    }
-
-    /**
-     * Shows/hides variant metafield elements on the page as necessary
-     */
-    updateMetafieldVisibility() {
-      document.querySelectorAll('[data-variant-metafield]').forEach((elem) => {
-        elem.classList.toggle('hidden', elem.dataset.variantMetafield !== this.variant?.id.toString());
-      });
+      this.dispatchEvent(new CustomEvent('on:variant:change', {
+        bubbles: true,
+        detail: {
+          form: this.productForm,
+          variant: this.variant,
+          product: this.data.product
+        }
+      }));
     }
 
     /**
@@ -88,18 +71,12 @@ if (!customElements.get('variant-picker')) {
 
       this.addBtn = this.addBtn || this.productForm.querySelector('[name="add"]');
       const variantAvailable = this.variant && this.variant.available;
+      const unavailableStr = this.variant ? theme.strings.noStock : theme.strings.noVariant;
 
-      this.addBtn.disabled = !variantAvailable || this.preSelection;
-
-      if (this.preSelection) {
-        this.addBtn.textContent = theme.strings.noSelectedVariant;
-      } else {
-
-        const unavailableStr = this.variant ? theme.strings.noStock : theme.strings.noVariant;
-        this.addBtn.textContent = variantAvailable
-          ? this.addBtn.dataset.addToCartText
-          : unavailableStr;
-      }
+      this.addBtn.disabled = !variantAvailable;
+      this.addBtn.textContent = variantAvailable
+        ? this.addBtn.dataset.addToCartText
+        : unavailableStr;
     }
 
     /**
@@ -142,9 +119,10 @@ if (!customElements.get('variant-picker')) {
       if (this.dataset.showAvailability === 'false') return;
       const { availabilityMethod } = this.dataset; // 'downward' or 'selection'
       let currVariant = this.variant;
+      const selectedOptions = this.getSelectedOptions();
 
       if (!this.variant) {
-        currVariant = { options: this.selectedOptions };
+        currVariant = { options: selectedOptions };
       }
 
       if (availabilityMethod === 'selection') {
@@ -190,7 +168,7 @@ if (!customElements.get('variant-picker')) {
             this.data.product.variants.forEach((v) => {
               let matches = 0;
               for (let i = 0; i < selectorIndex; i += 1) {
-                if (v.options[i] === this.selectedOptions[i] || this.selectedOptions[i] === null) {
+                if (v.options[i] === selectedOptions[i] || selectedOptions[i] === null) {
                   matches += 1;
                 }
               }
@@ -290,35 +268,15 @@ if (!customElements.get('variant-picker')) {
       this.price = this.price || this.section.querySelector('.product-info__price > .price');
       if (!this.price) return;
 
-      let { variant } = this;
-      if (this.preSelection) {
-        variant = this.data.product.variants[0];
-        for (let i = 1; i < this.data.product.variants.length; i += 1) {
-          if (this.data.product.variants[i].price < variant.price) variant = this.data.product.variants[i];
-        }
-      }
-
       if (this.variant) {
         const priceCurrentEl = this.price.querySelector('.price__current');
         const priceWasEl = this.price.querySelector('.price__was');
         const unitPriceEl = this.price.querySelector('.unit-price');
 
-        // Update price.
-        if (variant.compare_at_price > variant.price) {
-          priceCurrentEl.querySelector('.js-label').textContent = theme.strings.salePrice;
-          priceCurrentEl.querySelector('.js-value').innerHTML = this.data.formatted[variant.id].price;
-          if (priceWasEl) {
-            priceWasEl.querySelector('.js-label').textContent = theme.strings.regularPrice;
-            priceWasEl.querySelector('.js-value').innerHTML = this.data.formatted[variant.id].compareAtPrice || '';
-          }
-        } else {
-          priceCurrentEl.querySelector('.js-label').textContent = theme.strings.regularPrice;
-          priceCurrentEl.querySelector('.js-value').innerHTML = this.data.formatted[variant.id].price;
-          if (priceWasEl) {
-            priceWasEl.querySelector('.js-label').textContent = '';
-            priceWasEl.querySelector('.js-value').innerHTML = '';
-          }
-        }
+        // Update current price and original price if on sale.
+        priceCurrentEl.innerHTML = this.data.formatted[this.variant.id].price;
+        if (priceWasEl)
+          priceWasEl.innerHTML = this.data.formatted[this.variant.id].compareAtPrice || '';
 
         // Update unit price, if specified.
         if (this.variant.unit_price_measurement) {
@@ -336,15 +294,11 @@ if (!customElements.get('variant-picker')) {
           'price--on-sale',
           this.variant.compare_at_price > this.variant.price
         );
-        this.price.classList.toggle('price--sold-out', !this.variant.available && !this.preSelection);
+        this.price.classList.toggle('price--sold-out', !this.variant.available);
       }
 
-      this.price.querySelector('.price__default').hidden = !this.variant && !this.preSelection;
-      this.price.querySelector('.price__no-variant').hidden = this.variant || this.preSelection;
-      const from = this.price.querySelector('.price__from');
-      if (from) {
-        from.hidden = !this.preSelection;
-      }
+      this.price.querySelector('.price__default').hidden = !this.variant;
+      this.price.querySelector('.price__no-variant').hidden = this.variant;
     }
 
     /**
@@ -419,11 +373,9 @@ if (!customElements.get('variant-picker')) {
 
       this.optionSelectors.forEach((selector) => {
         if (selector.dataset.selectorType === 'dropdown') {
-          const selectedText = selector.querySelector('.custom-select__btn').textContent.trim();
-          selectedOptions.push(selectedText === this.dataset.placeholderText ? null : selectedText);
+          selectedOptions.push(selector.querySelector('.custom-select__btn').textContent.trim());
         } else {
-          const selected = selector.querySelector('input:checked');
-          selectedOptions.push(selected ? selected.value : null);
+          selectedOptions.push(selector.querySelector('input:checked').value);
         }
       });
 

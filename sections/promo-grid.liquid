@@ -57,12 +57,7 @@
     assign bg_color = settings.color_scheme_3_bg_grad | default: settings.color_scheme_3_bg
   endif
 
-  if bg_color and bg_color != settings.bg_color
-    assign bg_alpha = bg_color | color_extract: 'alpha'
-    if bg_alpha == 0
-      assign bg_color = false
-    endif
-  else
+  if bg_color == 'rgba(0,0,0,0)' or bg_color == settings.bg_color
     assign bg_color = false
   endif
 -%}
@@ -127,6 +122,7 @@
                     image: img,
                     widths: '480, 800, 980, 1200, 1440',
                     src_width: 800,
+                    src_placeholder: true,
                     sizes: sizes,
                     quality: 1,
                     section_index: section.index,

@@ -32,11 +32,8 @@
     assign bg_color = settings.color_scheme_3_bg_grad | default: settings.color_scheme_3_bg
   endif
 
-  if bg_color
-    assign bg_alpha = bg_color | color_extract: 'alpha'
-    if bg_alpha == 0
-      assign bg_color = false
-    endif
+  if bg_color == 'rgba(0,0,0,0)'
+    assign bg_color = false
   endif
 -%}
 
@@ -119,6 +116,35 @@
   {%- if bg_color -%}
     #{{ section.id }} .text-overlay { background: {{ bg_color }}; }
   {%- endif -%}
+
+  /* === Button Styles === */
+  #{{ section.id }} {
+    --btn1-bg: {{ section.settings.button_1_bg_color }};
+    --btn1-text: {{ section.settings.button_1_text_color }};
+    --btn1-bg-hover: {{ section.settings.button_1_bg_color_hover }};
+    --btn1-text-hover: {{ section.settings.button_1_text_color_hover }};
+    --btn2-bg: {{ section.settings.button_2_bg_color }};
+    --btn2-text: {{ section.settings.button_2_text_color }};
+    --btn2-bg-hover: {{ section.settings.button_2_bg_color_hover }};
+    --btn2-text-hover: {{ section.settings.button_2_text_color_hover }};
+  }
+
+  #{{ section.id }} .btn-1 {
+    background-color: var(--btn1-bg) !important;
+    color: var(--btn1-text) !important;
+  }
+  #{{ section.id }} .btn-1:hover {
+    background-color: var(--btn1-bg-hover) !important;
+    color: var(--btn1-text-hover) !important;
+  }
+  #{{ section.id }} .btn-2 {
+    background-color: var(--btn2-bg) !important;
+    color: var(--btn2-text) !important;
+  }
+  #{{ section.id }} .btn-2:hover {
+    background-color: var(--btn2-bg-hover) !important;
+    color: var(--btn2-text-hover) !important;
+  }
 {%- endstyle -%}
 
 <div class="slideshow-section section {% if section.settings.full_width %}section--full-width{% else %}container{% endif %}{% if section.settings.mobile_stacked and section.settings.height_mode != 'screen' %} mobile-stacked{% endif %}{% unless color_scheme == 'default' %} color-scheme color-scheme--{{ color_scheme }}{% endunless %}" id="{{ section.id }}">
@@ -130,11 +156,9 @@
           assign m_img = block.settings.image_mobile
           assign overlay_position = block.settings.overlay_position | split: ' '
           assign lazy_load = true
-          assign fetchpriority = 'low'
           if forloop.first
             if section.index == 1 or section.settings.prevent_animation
               assign lazy_load = false
-              assign fetchpriority = 'high'
             endif
           endif
 
@@ -159,7 +183,7 @@
           {%- endcapture -%}
         {%- endif -%}
 
-        <div class="slideshow__slide slideshow__slide--ignore-pagination {% if forloop.first %} is-active{% endif %} image-banner flex w-full {{ overlay_position | last }} {{ section.settings.height_mode }}-height{% if color_scheme == "white" %} color-scheme color-scheme--white{% endif %}{% if section.settings.mobile_stacked and section.settings.height_mode != 'screen' %} mobile-stacked{% endif %}" id="{{ section.id }}_{{ forloop.index }}"
+        <div class="slideshow__slide{% if section.blocks.size == 1 %} slideshow__slide--no-pagination{% endif %}{% if forloop.first %} is-active{% endif %} image-banner flex w-full {{ overlay_position | last }} {{ section.settings.height_mode }}-height{% if color_scheme == 'white' %} color-scheme color-scheme--white{% endif %}{% if section.settings.mobile_stacked and section.settings.height_mode != 'screen' %} mobile-stacked{% endif %}" id="{{ section.id }}_{{ forloop.index }}"
              role="group" aria-roledescription="{{ 'sections.slideshow.slide' | t }}"
              aria-label="{{ forloop.index }} {{ 'general.slider.of' | t }} {{ forloop.length }}"
              {% if style %}style="{{ style }}"{% endif %}
@@ -184,20 +208,35 @@
                   render 'sizes-attribute'
                 endcapture
               endif
+
+              if m_img != blank
+                assign desktop_image_class = 'img-fit hidden sm:block'
+              else
+                assign desktop_image_class = 'img-fit'
+              endif
             -%}
 
-            {%- render 'image-desktop-and-mobile',
-              class: 'img-fit',
-              desktop_image: img,
-              mobile_image: m_img,
-              src_width_mobile: 980,
-              widths_mobile: '480, 980, 1200, 1400',
-              src_width_desktop: 1400,
-              widths_desktop: '480, 980, 1200, 1400, 1600, 1920, 2560, 3200',
-              lazy_load: lazy_load,
-              fetchpriority: fetchpriority,
+            {%- if m_img != blank -%}
+              {%- render 'image',
+                image: m_img,
+                widths: '480, 980, 1200, 1400',
+                src_width: 980,
+                src_placeholder: true,
+                sizes: sizes,
+                class: 'img-fit sm:hidden',
+                lazy_load: lazy_load
+              -%}
+            {%- endif -%}
+
+            {%- render 'image',
+              image: img,
+              widths: '480, 980, 1200, 1400, 1600, 1920, 2560, 3200',
+              src_width: 1400,
+              src_placeholder: true,
               sizes: sizes,
-              block: block
+              quality: 1,
+              class: desktop_image_class,
+              lazy_load: lazy_load
             -%}
           {%- else -%}
             {{ 'lifestyle-2' | placeholder_svg_tag: 'media__placeholder img-fit' }}
@@ -209,7 +248,7 @@
             </div>
           {%- endif -%}
 
-          {%- if block.settings.heading != blank or block.settings.subheading != blank or block.settings.text != blank or block.settings.button_1_label != blank or block.settings.button_2_label != blank or block.settings.countdown_show -%}
+          {%- if block.settings.heading != blank or block.settings.subheading != blank or block.settings.text != blank or block.settings.countdown_show or block.settings.button_1_label != blank or block.settings.button_2_label != blank -%}
             <div class="slideshow__text container flex {{ overlay_position | first }}{% if block.settings.mob_center_text %} md-down:center{% endif %}{% unless bg_color %}{% if section.settings.mobile_stacked %} md-down:p-xl h-full md:h-auto{% endif %}{% endunless %}"{% if settings.animations_enabled != "disabled" and section.settings.prevent_animation == false %} data-cc-animate{% endif %}>
               <div class="text-overlay{% if bg_color %} text-overlay--bg{% endif %} {{ block.settings.overlay_text_align }}{% if block.settings.mob_center_text %} md-down:text-center{% endif %}{% if section.settings.color_scheme != "white" %}{% if section.settings.mobile_stacked %} md-down:p-xl h-full md:h-auto{% endif %}{% endif %} has-motion">
                 {%- if block.settings.subheading != blank -%}
@@ -238,8 +277,7 @@
                         --text-color: {{ block.settings.bg_color.rgb }};
                         --bg-color: {{ block.settings.count_color.rgba }};
                       }
-
-                      {%- if block.settings.use_custom_colors and block.settings.bg_grad != blank -%}
+                      {%- if block.settings.bg_grad != blank -%}
                         #{{ section.id }}_{{ forloop.index }} .countdown__number {
                           background: {{ block.settings.bg_grad }};
                         }
@@ -260,13 +298,12 @@
                 {%- if block.settings.button_1_label != blank or block.settings.button_2_label != blank -%}
                   <div class="text-overlay__buttons inline-flex flex-wrap items-start mt-4 {% if block.settings.overlay_text_align == 'text-start' %} justify-start{% elsif block.settings.overlay_text_align == 'text-end' %} justify-end{% else %} justify-center{% endif %}{% if block.settings.mob_center_text %} md-down:center{% endif %}">
                     {%- if block.settings.button_1_label != blank -%}
-                      <a class="{{ block.settings.button_1_style }}" {% if block.settings.button_1_link == blank %}role="link" aria-disabled="true"{% else %}href="{{ block.settings.button_1_link }}"{% endif %}>
+                      <a class="{{ block.settings.button_1_style }} btn-1" {% if block.settings.button_1_link == blank %}role="link" aria-disabled="true"{% else %}href="{{ block.settings.button_1_link }}"{% endif %}>
                         {{- block.settings.button_1_label | escape -}}
                       </a>
                     {%- endif -%}
-
                     {%- if block.settings.button_2_label != blank -%}
-                      <a class="{{ block.settings.button_2_style }}" {% if block.settings.button_2_link == blank %}role="link" aria-disabled="true"{% else %}href="{{ block.settings.button_2_link }}"{% endif %}>
+                      <a class="{{ block.settings.button_2_style }} btn-2" {% if block.settings.button_2_link == blank %}role="link" aria-disabled="true"{% else %}href="{{ block.settings.button_2_link }}"{% endif %}>
                         {{- block.settings.button_2_label | escape -}}
                       </a>
                     {%- endif -%}
@@ -358,18 +395,9 @@
       "id": "height_mode",
       "label": "Image height",
       "options": [
-        {
-          "value": "auto",
-          "label": "Height of first image"
-        },
-        {
-          "value": "fixed",
-          "label": "Fixed height (set below)"
-        },
-        {
-          "value": "screen",
-          "label": "Full screen height"
-        }
+        { "value": "auto", "label": "Height of first image" },
+        { "value": "fixed", "label": "Fixed height (set below)" },
+        { "value": "screen", "label": "Full screen height" }
       ],
       "default": "auto"
     },
@@ -377,7 +405,7 @@
       "type": "range",
       "id": "fixed_height_desktop",
       "min": 400,
-      "max": 1200,
+      "max": 1000,
       "step": 10,
       "unit": "px",
       "label": "Minimum fixed height on large screens",
@@ -387,7 +415,7 @@
       "type": "range",
       "id": "fixed_height_mobile",
       "min": 250,
-      "max": 600,
+      "max": 500,
       "step": 10,
       "unit": "px",
       "label": "Minimum fixed height on mobile",
@@ -409,18 +437,9 @@
       "id": "nav_style",
       "label": "Pagination style",
       "options": [
-        {
-          "value": "arrows",
-          "label": "Arrows"
-        },
-        {
-          "value": "slideshow_nav_dots",
-          "label": "Dots"
-        },
-        {
-          "value": "slideshow_nav_lines",
-          "label": "Lines"
-        }
+        { "value": "arrows", "label": "Arrows" },
+        { "value": "slideshow_nav_dots", "label": "Dots" },
+        { "value": "slideshow_nav_lines", "label": "Lines" }
       ],
       "default": "slideshow_nav_lines"
     },
@@ -435,18 +454,9 @@
       "id": "nav_position",
       "label": "Pagination position",
       "options": [
-        {
-          "value": "justify-start",
-          "label": "Left"
-        },
-        {
-          "value": "justify-center",
-          "label": "Center"
-        },
-        {
-          "value": "justify-end",
-          "label": "Right"
-        }
+        { "value": "justify-start", "label": "Left" },
+        { "value": "justify-center", "label": "Center" },
+        { "value": "justify-end", "label": "Right" }
       ],
       "default": "justify-center"
     },
@@ -455,18 +465,9 @@
       "id": "transition",
       "label": "Slide transition",
       "options": [
-        {
-          "value": "slide-fade",
-          "label": "Slide and fade"
-        },
-        {
-          "value": "slide",
-          "label": "Slide"
-        },
-        {
-          "value": "fade",
-          "label": "Fade"
-        }
+        { "value": "slide-fade", "label": "Slide and fade" },
+        { "value": "slide", "label": "Slide" },
+        { "value": "fade", "label": "Fade" }
       ],
       "default": "slide-fade"
     },
@@ -503,26 +504,11 @@
       "label": "Color scheme",
       "info": "When \"Transparent background\" is chosen, the text color can be set in each slide.",
       "options": [
-        {
-          "value": "white",
-          "label": "Transparent background"
-        },
-        {
-          "value": "default",
-          "label": "Default"
-        },
-        {
-          "value": "1",
-          "label": "Scheme 1"
-        },
-        {
-          "value": "2",
-          "label": "Scheme 2"
-        },
-        {
-          "value": "3",
-          "label": "Scheme 3"
-        }
+        { "value": "white", "label": "Transparent background" },
+        { "value": "default", "label": "Default" },
+        { "value": "1", "label": "Scheme 1" },
+        { "value": "2", "label": "Scheme 2" },
+        { "value": "3", "label": "Scheme 3" }
       ],
       "default": "white"
     },
@@ -547,6 +533,58 @@
       "unit": "%",
       "label": "Image tint opacity",
       "default": 40
+    },
+    {
+      "type": "header",
+      "content": "Button Colors"
+    },
+    {
+      "type": "color",
+      "id": "button_1_bg_color",
+      "label": "Button 1 Hintergrund",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_1_text_color",
+      "label": "Button 1 Textfarbe",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_1_bg_color_hover",
+      "label": "Button 1 Hover Hintergrund",
+      "default": "#333333"
+    },
+    {
+      "type": "color",
+      "id": "button_1_text_color_hover",
+      "label": "Button 1 Hover Text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_2_bg_color",
+      "label": "Button 2 Hintergrund",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_2_text_color",
+      "label": "Button 2 Textfarbe",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_2_bg_color_hover",
+      "label": "Button 2 Hover Hintergrund",
+      "default": "#333333"
+    },
+    {
+      "type": "color",
+      "id": "button_2_text_color_hover",
+      "label": "Button 2 Hover Text",
+      "default": "#ffffff"
     },
     {
       "type": "header",
@@ -598,42 +636,15 @@
           "id": "overlay_position",
           "label": "Text position",
           "options": [
-            {
-              "value": "justify-start items-start",
-              "label": "Top left"
-            },
-            {
-              "value": "justify-center items-start",
-              "label": "Top center"
-            },
-            {
-              "value": "justify-end items-start",
-              "label": "Top right"
-            },
-            {
-              "value": "justify-start items-center",
-              "label": "Middle left"
-            },
-            {
-              "value": "justify-center items-center",
-              "label": "Middle center"
-            },
-            {
-              "value": "justify-end items-center",
-              "label": "Middle right"
-            },
-            {
-              "value": "justify-start items-end",
-              "label": "Bottom left"
-            },
-            {
-              "value": "justify-center items-end",
-              "label": "Bottom center"
-            },
-            {
-              "value": "justify-end items-end",
-              "label": "Bottom right"
-            }
+            { "value": "justify-start items-start", "label": "Top left" },
+            { "value": "justify-center items-start", "label": "Top center" },
+            { "value": "justify-end items-start", "label": "Top right" },
+            { "value": "justify-start items-center", "label": "Middle left" },
+            { "value": "justify-center items-center", "label": "Middle center" },
+            { "value": "justify-end items-center", "label": "Middle right" },
+            { "value": "justify-start items-end", "label": "Bottom left" },
+            { "value": "justify-center items-end", "label": "Bottom center" },
+            { "value": "justify-end items-end", "label": "Bottom right" }
           ],
           "default": "justify-center items-center"
         },
@@ -642,18 +653,9 @@
           "id": "overlay_text_align",
           "label": "Text alignment",
           "options": [
-            {
-              "value": "text-start",
-              "label": "Left"
-            },
-            {
-              "value": "text-center",
-              "label": "Center"
-            },
-            {
-              "value": "text-end",
-              "label": "Right"
-            }
+            { "value": "text-start", "label": "Left" },
+            { "value": "text-center", "label": "Center" },
+            { "value": "text-end", "label": "Right" }
           ],
           "default": "text-center"
         },
@@ -682,34 +684,13 @@
           "id": "heading_size",
           "label": "Heading size",
           "options": [
-            {
-              "value": "h6",
-              "label": "Extra extra small"
-            },
-            {
-              "value": "h5",
-              "label": "Extra small"
-            },
-            {
-              "value": "h4",
-              "label": "Small"
-            },
-            {
-              "value": "h3",
-              "label": "Medium"
-            },
-            {
-              "value": "h2",
-              "label": "Large"
-            },
-            {
-              "value": "h1",
-              "label": "Extra large"
-            },
-            {
-              "value": "h0",
-              "label": "Extra extra large"
-            }
+            { "value": "h6", "label": "Extra extra small" },
+            { "value": "h5", "label": "Extra small" },
+            { "value": "h4", "label": "Small" },
+            { "value": "h3", "label": "Medium" },
+            { "value": "h2", "label": "Large" },
+            { "value": "h1", "label": "Extra large" },
+            { "value": "h0", "label": "Extra extra large" }
           ],
           "default": "h0"
         },
@@ -717,7 +698,6 @@
           "type": "checkbox",
           "id": "heading_h1",
           "label": "Set as page heading (uses h1 tag)",
-          "info": "For optimum SEO, a page should only have one h1 and it should be the first heading on the page.",
           "default": false
         },
         {
@@ -748,18 +728,9 @@
           "id": "button_1_style",
           "label": "Button 1 style",
           "options": [
-            {
-              "value": "link",
-              "label": "Link"
-            },
-            {
-              "value": "btn btn--primary",
-              "label": "Primary button"
-            },
-            {
-              "value": "btn btn--secondary",
-              "label": "Secondary button"
-            }
+            { "value": "link", "label": "Link" },
+            { "value": "btn btn--primary", "label": "Primary button" },
+            { "value": "btn btn--secondary", "label": "Secondary button" }
           ],
           "default": "btn btn--primary"
         },
@@ -779,92 +750,11 @@
           "id": "button_2_style",
           "label": "Button 2 style",
           "options": [
-            {
-              "value": "link",
-              "label": "Link"
-            },
-            {
-              "value": "btn btn--primary",
-              "label": "Primary button"
-            },
-            {
-              "value": "btn btn--secondary",
-              "label": "Secondary button"
-            }
+            { "value": "link", "label": "Link" },
+            { "value": "btn btn--primary", "label": "Primary button" },
+            { "value": "btn btn--secondary", "label": "Secondary button" }
           ],
           "default": "btn btn--primary"
-        },
-        {
-          "type": "color",
-          "id": "transparent_content_color",
-          "label": "Text and button color",
-          "info": "Only applies when the \"Transparent background\" color scheme is chosen and the text shows over an image.",
-          "default": "#ffffff"
-        },
-        {
-          "type": "header",
-          "content": "Countdown timer"
-        },
-        {
-          "type": "checkbox",
-          "id": "countdown_show",
-          "label": "Show countdown timer",
-          "default": false
-        },
-        {
-          "type": "text",
-          "id": "countdown_end_date",
-          "label": "End date",
-          "info": "Format: YYYY-MM-DD. If you don't enter a date, midnight tonight will be used."
-        },
-        {
-          "type": "text",
-          "id": "countdown_end_time",
-          "label": "End time (optional)",
-          "info": "Format: 17:00 (24 hour clock). Uses the store's timezone."
-        },
-        {
-          "type": "richtext",
-          "id": "countdown_end_text",
-          "label": "End text",
-          "info": "This shows when the date and time elapses."
-        },
-        {
-          "type": "checkbox",
-          "id": "enlarge_end_text",
-          "label": "Enlarge end text",
-          "default": false
-        },
-        {
-          "type": "checkbox",
-          "id": "countdown_hide_on_end",
-          "label": "Hide the timer when the date and time elapses",
-          "default": false
-        },
-        {
-          "type": "checkbox",
-          "id": "use_custom_colors",
-          "label": "Use custom colors",
-          "info": "Uses colors specified below.",
-          "default": false
-        },
-        {
-          "type": "color",
-          "id": "count_color",
-          "label": "Count number",
-          "default": "#fff"
-        },
-        {
-          "type": "color",
-          "id": "bg_color",
-          "label": "Count background/colon",
-          "default": "#070707"
-        },
-        {
-          "type": "color_background",
-          "id": "bg_grad",
-          "label": "Count background gradient",
-          "info": "If set, replaces the background color."
         }
       ]
     }
@@ -872,22 +762,11 @@
   "presets": [
     {
       "name": "Slideshow",
-      "blocks": [
-        {
-          "type": "slide"
-        },
-        {
-          "type": "slide"
-        }
-      ]
+      "blocks": [ { "type": "slide" }, { "type": "slide" } ]
     }
   ],
   "disabled_on": {
-    "groups": [
-      "header",
-      "footer",
-      "aside"
-    ]
+    "groups": [ "header", "footer", "aside" ]
   }
 }
 {% endschema %}

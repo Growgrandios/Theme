@@ -10,12 +10,7 @@
     assign bg_color = settings.color_scheme_3_bg
   endif
 
-  if bg_color and bg_color != settings.bg_color
-    assign bg_alpha = bg_color | color_extract: 'alpha'
-    if bg_alpha == 0
-      assign bg_color = false
-    endif
-  else
+  if bg_color == settings.bg_color or bg_color == 'rgba(0,0,0,0)'
     assign bg_color = false
   endif
 
@@ -102,8 +97,6 @@
       {%- endif -%}
     {%- endfor -%}
   {%- endcapture -%}
-
-  {%- if faq_json != blank -%}
   {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -111,7 +104,6 @@
       {{ faq_json | remove_last: ',' }}
     ]
   }
-  {%- endif -%}
 </script>
 
 {% schema %}

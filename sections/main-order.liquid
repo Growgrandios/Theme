@@ -116,7 +116,7 @@
                       <span class="visually-hidden">{{ 'products.product.price.regular_price' | t }}</span>
                     </dt>
                     <dd class="inline m-0">
-                      <span class="line-through">{{ line_item.original_price | money }}</span>
+                      <s>{{ line_item.original_price | money }}</s>
                     </dd>
                   {%- else -%}
                     <dt>
@@ -230,7 +230,7 @@
                     <span class="visually-hidden">{{ 'products.product.price.regular_price' | t }}</span>
                   </dt>
                   <dd class="m-0">
-                    <span class="line-through">{{ line_item.original_line_price | money }}</span>
+                    <s>{{ line_item.original_line_price | money }}</s>
                   </dd>
                 </dl>
               {%- else -%}

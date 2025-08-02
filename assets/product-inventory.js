@@ -2,11 +2,7 @@ if (!customElements.get('product-inventory')) {
   class ProductInventory extends HTMLElement {
     constructor() {
       super();
-      if (this.hidden) {
-        this.initLazySection();
-      } else {
-        window.initLazyScript(this, this.initLazySection.bind(this));
-      }
+      window.initLazyScript(this, this.initLazySection.bind(this));
     }
 
     initLazySection() {
@@ -66,10 +62,6 @@ if (!customElements.get('product-inventory')) {
      * @param {string} inventoryPolicy - whether product continues selling when out of stock
      */
     updateInventory(count, available, inventoryPolicy) {
-      if (count === 0 && !available && this.hidden) {
-        return;
-      }
-
       let inventoryLevel;
 
       if (count <= 0) {

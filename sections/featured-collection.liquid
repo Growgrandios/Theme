@@ -6,10 +6,6 @@
   {{ 'product.css' | asset_url | stylesheet_tag }}
 {%- endif -%}
 
-{%- if settings.card_hover_action == 'slideshow' -%}
-  <script src="{{ 'product-card-image-slider.js' | asset_url }}" defer="defer"></script>
-{%- endif -%}
-
 {%- if settings.enable_quick_add -%}
   <link rel="stylesheet" href="{{ 'quick-add.css' | asset_url }}" media="print" onload="this.media='all'">
   <script src="{{ 'quick-add.js' | asset_url }}" defer="defer"></script>
@@ -139,28 +135,10 @@
     assign bg_color = settings.color_scheme_3_bg_grad | default: settings.color_scheme_3_bg
   endif
 
-  if bg_color and bg_color != settings.bg_color
-    assign bg_alpha = bg_color | color_extract: 'alpha'
-    if bg_alpha == 0
-      assign bg_color = false
-    endif
-  else
+  if bg_color == settings.bg_color or bg_color == 'rgba(0,0,0,0)'
     assign bg_color = false
   endif
 -%}
-
-{%- capture slider_arrows -%}
-  <div class="slider-nav absolute top-middle end {% if settings.slider_show_arrows == 'hover' %}slider-nav--show-on-hover no-hover-hidden {% endif %}hidden md:block no-js-hidden">
-    <button type="button" class="slider-nav__btn tap-target btn {{ settings.slider_button_style }} has-ltr-icon" name="next" aria-controls="slider-{{ section.id }}">
-      <span class="visually-hidden">{{ 'general.slider.next' | t }}</span>
-      {% render 'icon-chevron-right' %}
-    </button>
-    <button type="button" class="slider-nav__btn tap-target btn {{ settings.slider_button_style }} has-ltr-icon" name="prev" aria-controls="slider-{{ section.id }}">
-      <span class="visually-hidden">{{ 'general.slider.previous' | t }}</span>
-      {% render 'icon-chevron-left' %}
-    </button>
-  </div>
-{%- endcapture -%}
 
 <div class="section">
   {%- if section.settings.title != blank or section.settings.show_view_all -%}
@@ -212,6 +190,7 @@
                     image: section.settings.image,
                     widths: '320, 460, 600, 700, 800, 900, 1200',
                     src_width: 460,
+                    src_placeholder: true,
                     sizes: false,
                     class: 'img-fit img-fit--cover' %}
 
@@ -257,33 +236,36 @@
 
             <div class="container products-grid-container shrink-0">
               <ul class="{% if carousel %}slider__grid {% endif %}grid {{ grid_classes }}{% if section.settings.layout == 'carousel_on_mobile' and section.settings.card_size_mobile == 'small' and settings.card_contain %} sm:gap-x-theme sm:gap-y-8{% else %} gap-x-theme gap-y-8{% endif %}{% if section.settings.card_size_mobile == 'small' and settings.card_contain %} small__grid{% endif %}" role="list">
-                {%- if collection != blank -%}
-                  {%- for product in collection.products limit: section.settings.products_to_show -%}
-                    <li {% if carousel %}class="slider__item"{% endif %}{% if settings.animations_enabled != "disabled" %}data-cc-animate data-cc-animate-delay="{{ forloop.index | times: 0.07 }}s"{% endif %}>
-                      {% render 'product-card', product: product, collection: collection, image_ratio: image_ratio, show_highlight_product: section.settings.show_highlight_products %}
-                    </li>
-                  {%- endfor -%}
+                {%- for product in collection.products limit: section.settings.products_to_show -%}
+                  <li {% if carousel %}class="slider__item"{% endif %}{% if settings.animations_enabled != "disabled" %}data-cc-animate data-cc-animate-delay="{{ forloop.index | times: 0.07 }}s"{% endif %}>
+                    {% render 'product-card', product: product, collection: collection, image_ratio: image_ratio %}
+                  </li>
                 {%- else -%}
                   {%- for i in (1..section.settings.products_to_show) -%}
                     <li {% if carousel %}class="slider__item"{% endif %}{% if settings.animations_enabled != "disabled" %}data-cc-animate data-cc-animate-delay="{{ forloop.index | times: 0.07 }}s"{% endif %}>
-                      {% render 'product-card', product: "", image_ratio: image_ratio, show_highlight_product: section.settings.show_highlight_products %}
+                      {% render 'product-card', product: "", image_ratio: image_ratio %}
                     </li>
                   {%- endfor -%}
-                {%- endif -%}
+                {%- endfor -%}
               </ul>
             </div>
 
             {%- if carousel -%}
             </div>
 
-            {%- if settings.slider_show_arrows != 'never' and section.settings.show_promo_info == false -%}
-              {{ slider_arrows }}
+            {%- if settings.slider_show_arrows != 'never' -%}
+              <div class="slider-nav absolute top-middle end {% if settings.slider_show_arrows == 'hover' %}slider-nav--show-on-hover no-hover-hidden {% endif %}hidden md:block no-js-hidden">
+                <button type="button" class="slider-nav__btn tap-target btn {{ settings.slider_button_style }} has-ltr-icon" name="next" aria-controls="slider-{{ section.id }}">
+                  <span class="visually-hidden">{{ 'general.slider.next' | t }}</span>
+                  {% render 'icon-chevron-right' %}
+                </button>
+                <button type="button" class="slider-nav__btn tap-target btn {{ settings.slider_button_style }} has-ltr-icon" name="prev" aria-controls="slider-{{ section.id }}">
+                  <span class="visually-hidden">{{ 'general.slider.previous' | t }}</span>
+                  {% render 'icon-chevron-left' %}
+                </button>
+              </div>
             {%- endif -%}
           </div>
-
-          {%- if settings.slider_show_arrows != 'never' and section.settings.show_promo_info -%}
-            {{ slider_arrows }}
-          {%- endif -%}
         </carousel-slider>
       {%- endif -%}
       {%- if section.settings.show_promo_info -%}
@@ -296,7 +278,7 @@
 {
   "name": "Featured collection",
   "tag": "section",
-  "class": "cc-featured-collection cc-product-card-grid",
+  "class": "cc-featured-collection",
   "settings": [
     {
       "type": "header",
@@ -407,13 +389,6 @@
       "max": 24,
       "step": 1,
       "default": 8
-    },
-    {
-      "type": "checkbox",
-      "id": "show_highlight_products",
-      "label": "Show highlight products",
-      "info": "To highlight a particular product card, add a \"True or false\" product metafield with the namespace and key \"theme.highlight\". See more settings in Theme Settings > Product cards > Highlighted cards.",
-      "default": true
     },
     {
       "type": "header",

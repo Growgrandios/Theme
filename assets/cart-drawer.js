@@ -191,6 +191,7 @@ if (!customElements.get('cart-drawer')) {
 
         if (overlay) overlay.style.transitionDelay = '';
       }, quickAddDrawer ? 200 : 0);
+      window.initLazyImages();
     }
 
     /**
@@ -209,14 +210,13 @@ if (!customElements.get('cart-drawer')) {
           const cartResponse = await fetch(`?sections=${response.join(',')}`);
           const sections = await cartResponse.json();
           this.renderContents({ sections }, false);
-          CartDrawer.recalculateCssVarHeights();
         }
       } catch (error) {
         console.log(error); // eslint-disable-line
         this.dispatchEvent(new CustomEvent('on:cart:error', {
           bubbles: true,
           detail: {
-            error: this.errorMsg?.textContent
+            error: this.errorMsg.textContent
           }
         }));
       }
@@ -254,6 +254,8 @@ if (!customElements.get('cart-drawer')) {
       if (openDrawer && this.getAttribute('open') === null) {
         setTimeout(() => this.open());
       }
+
+      window.initLazyImages();
     }
 
     /**

@@ -142,6 +142,58 @@ window.addEventListener('resize', debounce(setDimensionVariables, 400));
 setTimeout(setViewportHeight, 3000);
 
 /**
+ * Checks if a lazy load image has alternate <source> elements and copies the
+ * 'data-src' and 'data-srcset' attributes to 'src' and 'srcset' accordingly.
+ * @param {Element} img - Image element.
+ */
+function setImageSources(img) {
+  const setImageAttr = (el) => {
+    if (el.dataset.src && !el.src) {
+      el.src = el.dataset.src;
+    }
+
+    if (el.dataset.srcset && !el.srcset) {
+      el.srcset = el.dataset.srcset;
+    }
+  };
+
+  if (img.parentNode.tagName === 'PICTURE') {
+    Array.from(img.parentNode.children).forEach((el) => {
+      setImageAttr(el);
+    });
+  } else {
+    setImageAttr(img);
+  }
+}
+
+/**
+ * Initialises lazy load images.
+ */
+function initLazyImages() {
+  if ('loading' in HTMLImageElement.prototype === false && 'IntersectionObserver' in window) {
+    // If native lazyload not supported but IntersectionObserver supported (Safari).
+    const io = new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          setImageSources(img);
+          observer.unobserve(img);
+        }
+      });
+    }, { rootMargin: '0px 0px 500px 0px' });
+
+    document.querySelectorAll('[loading="lazy"]').forEach((img) => {
+      io.observe(img);
+    });
+  } else {
+    // If native lazy load supported or IntersectionObserver not supported (legacy browsers).
+    document.querySelectorAll('[loading="lazy"]').forEach((img) => {
+      setImageSources(img);
+    });
+  }
+}
+
+/**
  * Adds an observer to initialise a script when an element is scrolled into view.
  * @param {Element} element - Element to observe.
  * @param {Function} callback - Function to call when element is scrolled into view.
@@ -352,30 +404,12 @@ function trapFocus(container, elementToFocus = container) {
     container.querySelectorAll('summary, a[href], area[href], button:not([disabled]), input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled]), object, iframe, audio[controls], video[controls], [tabindex]:not([tabindex^="-"])')
   );
 
-  let firstEl = null;
-  let lastEl = null;
-  const isVisible = (el) => el.offsetParent && getComputedStyle(el).visibility !== 'hidden';
-
-  const setFirstLastEls = () => {
-    for (let i = 0; i < focusableEls.length; i += 1) {
-      if (isVisible(focusableEls[i])) {
-        firstEl = focusableEls[i];
-        break;
-      }
-    }
-    for (let i = focusableEls.length - 1; i >= 0; i -= 1) {
-      if (isVisible(focusableEls[i])) {
-        lastEl = focusableEls[i];
-        break;
-      }
-    }
-  };
+  const firstEl = focusableEls[0];
+  const lastEl = focusableEls[focusableEls.length - 1];
 
   removeTrapFocus();
 
   trapFocusHandlers.focusin = (evt) => {
-    setFirstLastEls();
-
     if (evt.target !== container && evt.target !== lastEl && evt.target !== firstEl) return;
     document.addEventListener('keydown', trapFocusHandlers.keydown);
   };
@@ -386,8 +420,6 @@ function trapFocus(container, elementToFocus = container) {
 
   trapFocusHandlers.keydown = (evt) => {
     if (evt.code !== 'Tab') return;
-
-    setFirstLastEls();
 
     // If tab pressed on last focusable element, focus the first element.
     if (evt.target === lastEl && !evt.shiftKey) {
@@ -428,6 +460,11 @@ class Modal extends HTMLElement {
    * @param {Element} opener - Modal opener element.
    */
   open(opener) {
+    // Prevent page behind from scrolling when side drawer is open
+    this.scrollY = window.scrollY;
+    document.body.classList.add('fixed');
+    document.body.style.top = `-${this.scrollY}px`;
+
     this.setAttribute('open', '');
     this.openedBy = opener;
 
@@ -453,6 +490,11 @@ class Modal extends HTMLElement {
    * Closes the modal.
    */
   close() {
+    // Restore page position and scroll behaviour.
+    document.body.style.top = '';
+    document.body.classList.remove('fixed');
+    window.scrollTo(0, this.scrollY);
+
     this.removeAttribute('open');
 
     removeTrapFocus(this.openedBy);
@@ -491,7 +533,6 @@ class ProductCard extends HTMLElement {
     this.images = this.querySelectorAll('.card__main-image');
     this.links = this.querySelectorAll('.js-prod-link');
     this.quickAddBtn = this.querySelector('.js-quick-add');
-    this.carouselSlider = this.querySelector('product-card-image-slider');
 
     if (this.quickAddBtn) {
       this.productUrl = this.quickAddBtn.dataset.productUrl;
@@ -510,7 +551,7 @@ class ProductCard extends HTMLElement {
     if (!evt.target.matches('.opt-btn')) return;
 
     // Swap current card image to selected variant image.
-    if (evt.target.dataset.mediaId && !this.carouselSlider) {
+    if (evt.target.dataset.mediaId) {
       const variantMedia = this.querySelector(`[data-media-id="${evt.target.dataset.mediaId}"]`);
 
       if (variantMedia) {
@@ -625,6 +666,12 @@ class SideDrawer extends HTMLElement {
       bubbles: true
     }));
 
+    // Prevent page behind from scrolling when side drawer is open.
+    this.scrollY = window.scrollY;
+    document.body.classList.add('fixed');
+    document.body.style.top = `-${this.scrollY}px`;
+    document.documentElement.style.height = '100vh';
+
     this.overlay.classList.add('is-visible');
     this.setAttribute('open', '');
     this.setAttribute('aria-hidden', 'false');
@@ -668,6 +715,12 @@ class SideDrawer extends HTMLElement {
     this.overlay.classList.remove('is-visible');
 
     removeTrapFocus(this.opener);
+
+    // Restore page position and scroll behaviour.
+    document.documentElement.style.height = '';
+    document.body.style.top = '';
+    document.body.classList.remove('fixed');
+    window.scrollTo(0, this.scrollY);
 
     // Remove event listeners added on drawer opening.
     this.removeEventListener('click', this.clickHandler);
@@ -1497,10 +1550,6 @@ class MainMenu extends HTMLElement {
 
       if (theme.mediaMatches.md || el.classList.contains('main-menu__disclosure')) {
         document.body.classList.add('overflow-hidden');
-
-        if (!theme.mediaMatches.md && !document.querySelector('store-header[data-is-sticky="true"]')) {
-          document.body.classList.add('fixed');
-        }
       }
     }
   }
@@ -1529,7 +1578,7 @@ class MainMenu extends HTMLElement {
     }, 200);
 
     if (theme.mediaMatches.md || el.classList.contains('main-menu__disclosure')) {
-      document.body.classList.remove('overflow-hidden', 'fixed');
+      document.body.classList.remove('overflow-hidden');
     }
   }
 
@@ -1566,31 +1615,30 @@ customElements.define('main-menu', MainMenu);
 class CarouselSlider extends HTMLElement {
   constructor() {
     super();
+    this.slides = this.querySelectorAll('.slider__item');
+    if (this.slides.length < 2) return;
     window.initLazyScript(this, this.init.bind(this));
   }
 
   disconnectedCallback() {
-    window.removeEventListener('on:debounced-resize', this.breakpointChangeHandler);
+    window.removeEventListener('on:breakpoint-change', this.breakpointChangeHandler);
   }
 
   init() {
-    // Ignore nested slides
-    this.slides = Array.from(this.querySelector('.slider__item').parentElement.children).filter((child) => !child.hasAttribute('hidden'));
-    if (this.slides.length < 2) return;
     this.slider = this.querySelector('.slider');
     this.grid = this.querySelector('.slider__grid');
-    this.nav = this.querySelector(`.slider-nav__btn[aria-controls='${this.slider.id}']`)?.closest('.slider-nav');
+    this.nav = this.querySelector('.slider-nav');
     this.rtl = document.dir === 'rtl';
     this.breakpointChangeHandler = this.breakpointChangeHandler
       || this.handleBreakpointChange.bind(this);
 
     if (this.nav) {
-      this.prevBtn = this.nav.querySelector('button[name="prev"]');
-      this.nextBtn = this.nav.querySelector('button[name="next"]');
+      this.prevBtn = this.querySelector('button[name="prev"]');
+      this.nextBtn = this.querySelector('button[name="next"]');
     }
 
     this.initSlider();
-    window.addEventListener('on:debounced-resize', this.breakpointChangeHandler);
+    window.addEventListener('on:breakpoint-change', this.breakpointChangeHandler);
   }
 
   initSlider() {
@@ -1694,7 +1742,6 @@ class CarouselSlider extends HTMLElement {
   handleMouseup() {
     this.mousedown = false;
     this.slider.classList.remove('is-grabbing');
-    this.slider.classList.remove('is-dragging');
   }
 
   /**
@@ -1707,7 +1754,6 @@ class CarouselSlider extends HTMLElement {
 
     const x = evt.pageX - this.sliderStart;
     this.slider.scrollLeft = this.scrollPos - (x - this.startX) * 2;
-    this.slider.classList.add('is-dragging');
   }
 
   /**
@@ -1727,7 +1773,7 @@ class CarouselSlider extends HTMLElement {
   }
 
   /**
-   * Handles 'on:debounced-resize' events on the window.
+   * Handles 'on:breakpoint-change' events on the window.
    */
   handleBreakpointChange() {
     this.removeListeners();
@@ -1821,6 +1867,8 @@ class ProductRecommendations extends HTMLElement {
       if (el && el.hasChildNodes()) {
         this.innerHTML = el.innerHTML;
       }
+
+      window.initLazyImages();
     } catch (error) {
       console.log(error); // eslint-disable-line
     }
@@ -1829,6 +1877,7 @@ class ProductRecommendations extends HTMLElement {
 
 customElements.define('product-recommendations', ProductRecommendations);
 
+setTimeout(() => { requestAnimationFrame(initLazyImages); }, 0);
 window.initLazyScript = initLazyScript;
 
 document.addEventListener('keydown', (evt) => {

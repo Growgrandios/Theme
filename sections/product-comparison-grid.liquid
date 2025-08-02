@@ -303,15 +303,8 @@
                               {%- if is_swatch -%}
                                 {%- capture swatches -%}
                                   {%- for option in product.options_with_values -%}
-                                    {%- liquid
-                                      assign is_native_swatch = false
-                                      assign native_swatch_options = option.values | where: 'swatch'
-                                      if settings.card_colors_style == 'native' and native_swatch_options.size > 0
-                                        assign is_native_swatch = true
-                                      endif
-                                    -%}
-                                    {%- if is_native_swatch or settings.swatch_option_name and settings.card_colors_style != 'none' and settings.swatch_option_name contains option.name -%}
-                                      {%- if is_native_swatch or settings.card_colors_style == 'swatches' or settings.card_colors_style == 'variant-images' -%}
+                                    {%- if settings.swatch_option_name and settings.card_colors_style != 'none' and settings.swatch_option_name contains option.name -%}
+                                      {%- if settings.card_colors_style == 'swatches' or settings.card_colors_style == 'variant-images' -%}
                                         {%- render 'compare-swatches', product: product, option: option, section: section -%}
                                       {%- else -%}
                                         {%- if option.values.size == 1 -%}
@@ -490,17 +483,17 @@
               </table>
             </div>
           </div>
-        </div>
 
-        {% if section.settings.num_rows > 0 and section.blocks.size > section.settings.num_rows %}
-          {%- assign additional_row_count = section.blocks.size | minus: section.settings.num_rows -%}
-          <div class="text-center">
-            <button type="button" class="btn btn--secondary js-show-all mt-5" data-toggle-text="{{ 'sections.product_comparison_grid.hide_rows' | t: count: additional_row_count }}">
-              {{- 'sections.product_comparison_grid.show_rows' | t: count: additional_row_count -}}
-            </button>
-          </div>
-          <script src="{{ 'product-comparison-grid.js' | asset_url }}" defer="defer"></script>
-        {% endif %}
+          {% if section.settings.num_rows > 0 and section.blocks.size > section.settings.num_rows %}
+            {%- assign additional_row_count = section.blocks.size | minus: section.settings.num_rows -%}
+            <div class="text-center">
+              <button type="button" class="btn btn--secondary js-show-all mt-5" data-toggle-text="{{ 'sections.product_comparison_grid.hide_rows' | t: count: additional_row_count }}">
+                {{- 'sections.product_comparison_grid.show_rows' | t: count: additional_row_count -}}
+              </button>
+            </div>
+            <script src="{{ 'product-comparison-grid.js' | asset_url }}" defer="defer"></script>
+          {% endif %}
+        </div>
       </product-comparison-grid>
     {%- endif -%}
   </div>
@@ -807,7 +800,7 @@
           "type": "text",
           "id": "metafield_key",
           "label": "Metafield namespace and key",
-          "info": "Enter a product metafield namespace and key, e.g. custom.trim_color. \"List\" metafields are unsupported. [Read more](https://cleancanvas.co.uk/support/enterprise/sections/comparison-grid)"
+          "info": "Enter a product metafield namespace and key, e.g. custom.trim_color. 'List' metafields are unsupported. [Read more](https://cleancanvas.co.uk/support/enterprise/sections/comparison-grid)"
         }
       ]
     }

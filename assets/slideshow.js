@@ -32,7 +32,7 @@ if (!customElements.get('slide-show')) {
         this.slideshow.addEventListener('touchmove', debounce(this.handleTouchMove.bind(this), 200), { passive: true });
       }
 
-      this.slideshow.addEventListener('wheel', this.handleWheel.bind(this), { passive: true });
+      this.slideshow.addEventListener('wheel', this.handleWheel.bind(this));
 
       this.slideshow.addEventListener('transitionend', SlideShow.handleTransitionend);
 

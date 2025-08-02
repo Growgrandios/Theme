@@ -1,4 +1,4 @@
-/* global SideDrawer */
+/* global SideDrawer, debounce, initLazyImages */
 
 if (!customElements.get('facet-filters')) {
   class FacetFilters extends SideDrawer {
@@ -20,7 +20,6 @@ if (!customElements.get('facet-filters')) {
       this.form = document.getElementById('facets');
       this.results = document.getElementById('filter-results');
       this.expanded = [];
-      this.filterChangeTimeout = null;
 
       this.handleBreakpointChange();
       this.addElements();
@@ -50,8 +49,7 @@ if (!customElements.get('facet-filters')) {
         this.breakpointChangeHandler = this.breakpointChangeHandler
           || this.handleBreakpointChange.bind(this);
         this.filters.addEventListener('click', this.handleFiltersClick.bind(this));
-        this.filters.addEventListener('input', this.handleFilterChange.bind(this));
-        this.filters.addEventListener('change', this.handleFilterChange.bind(this));
+        this.filters.addEventListener('input', debounce(this.handleFilterChange.bind(this), 500));
         this.activeFilters.addEventListener('click', this.handleActiveFiltersClick.bind(this));
         window.addEventListener('on:breakpoint-change', this.breakpointChangeHandler);
       }
@@ -84,48 +82,36 @@ if (!customElements.get('facet-filters')) {
      * @param {object} evt - Event object.
      */
     handleFilterChange(evt) {
-      // Only allow price 'change' events
-      if (evt.type === 'change' && !(evt.target.id?.includes('price-range') || evt.target.id?.includes('sort-by'))) return;
+      const formData = new FormData(this.form);
+      const searchParams = new URLSearchParams(formData);
+      const emptyParams = [];
 
-      // Dont reload when typing a price
-      if (evt.target.id?.includes('price-range') && evt.constructor.name === 'InputEvent') return;
+      if (this.sortingEnabled) {
+        let currentSortBy = searchParams.get('sort_by');
 
-      const timeoutDelay = 500;
-
-      clearTimeout(this.filterChangeTimeout);
-
-      this.filterChangeTimeout = setTimeout(() => {
-        const formData = new FormData(this.form);
-        const searchParams = new URLSearchParams(formData);
-        const emptyParams = [];
-
-        if (this.sortingEnabled) {
-          let currentSortBy = searchParams.get('sort_by');
-
-          // Keep the mobile facets form sync'd with the desktop sort by dropdown
-          if (evt.target.tagName === 'CUSTOM-SELECT') {
-            this.mobileSortByOptions.forEach((option) => {
-              option.checked = option.value === evt.detail.selectedValue;
-              currentSortBy = evt.detail.selectedValue;
-            });
-          }
-
-          // Set the 'sort_by' parameter.
-          searchParams.set('sort_by', currentSortBy);
+        // Keep the mobile facets form sync'd with the desktop sort by dropdown
+        if (evt.target.tagName === 'CUSTOM-SELECT') {
+          this.mobileSortByOptions.forEach((option) => {
+            option.checked = option.value === evt.detail.selectedValue;
+            currentSortBy = evt.detail.selectedValue;
+          });
         }
 
-        // Get empty parameters.
-        searchParams.forEach((value, key) => {
-          if (!value) emptyParams.push(key);
-        });
+        // Set the 'sort_by' parameter.
+        searchParams.set('sort_by', currentSortBy);
+      }
 
-        // Remove empty parameters.
-        emptyParams.forEach((key) => {
-          searchParams.delete(key);
-        });
+      // Get empty parameters.
+      searchParams.forEach((value, key) => {
+        if (!value) emptyParams.push(key);
+      });
 
-        this.applyFilters(searchParams.toString(), evt);
-      }, timeoutDelay);
+      // Remove empty parameters.
+      emptyParams.forEach((key) => {
+        searchParams.delete(key);
+      });
+
+      this.applyFilters(searchParams.toString(), evt);
     }
 
     /**
@@ -190,9 +176,6 @@ if (!customElements.get('facet-filters')) {
      */
     async applyFilters(searchParams, evt, updateUrl = true) {
       try {
-        // Preserve the current element focus
-        const activeElementId = document.activeElement.id;
-
         // Disable infinite scrolling.
         const customPagination = document.querySelector('custom-pagination');
         if (customPagination) customPagination.dataset.pauseInfiniteScroll = 'true';
@@ -265,6 +248,9 @@ if (!customElements.get('facet-filters')) {
           this.addElements();
           this.addListeners();
 
+          // Reinitialize lazyload images after filters applied.
+          if (typeof initLazyImages === 'function') initLazyImages();
+
           // Reinitialize any custom pagination
           if (customPagination && customPagination.reload) customPagination.reload();
 
@@ -296,14 +282,11 @@ if (!customElements.get('facet-filters')) {
           // Renable infinite scroll
           if (customPagination) customPagination.dataset.pauseInfiniteScroll = 'false';
 
-          // Focus on the element with the same ID in the new HTML
-          if (activeElementId) document.getElementById(activeElementId)?.focus();
-
           // Broadcast the update for anything else to hook into
           document.dispatchEvent(new CustomEvent('on:facet-filters:updated'), { bubbles: true });
         }
       } catch (error) {
-        console.warn(error); // eslint-disable-line
+        console.warn(error);
       } finally {
         this.results.classList.remove('is-loading');
       }
