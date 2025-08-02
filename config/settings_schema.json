@@ -40,6 +40,12 @@
       },
       {
         "type": "color",
+        "id": "link_hover_color",
+        "label": "Links (Hover)",
+        "default": "#65AD07"
+      },
+      {
+        "type": "color",
         "id": "star_color",
         "label": "Rating stars",
         "default": "#f7c346"
@@ -2231,12 +2237,13 @@
             "label": "Variant images"
           }
         ],
-        "default": "native"
+        "default": "swatches"
       },
       {
         "type": "select",
         "id": "variant_picker_swatch_shape",
         "label": "Icon shape",
+        "info": "Applies when the \"Selector style\" is set to \"Buttons\" in the \"Variant picker\" block.",
         "default": "circle",
         "options": [
           {
@@ -2301,7 +2308,7 @@
             "label": "None"
           }
         ],
-        "default": "native"
+        "default": "swatches"
       },
       {
         "type": "select",
@@ -2353,10 +2360,6 @@
           {
             "value": "none",
             "label": "None"
-          },
-          {
-            "value": "native",
-            "label": "Shopify"
           },
           {
             "value": "swatches",
