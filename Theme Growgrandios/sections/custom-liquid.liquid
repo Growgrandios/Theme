@@ -1,0 +1,158 @@
+{% if customer %}
+  <!-- DEBUG: Alle Customer Daten anzeigen -->
+  <div style="background: #ff0000; color: white; padding: 10px; margin: 10px 0;">
+    <strong>DEBUG - Customer Info:</strong><br>
+    <strong>Customer ID:</strong> {{ customer.id }}<br>
+    <strong>Customer Email:</strong> {{ customer.email }}<br>
+    <strong>Customer Tags:</strong> {{ customer.tags }}<br>
+    <strong>custom.birth_date:</strong> {{ customer.metafields.custom.birth_date.value }}<br>
+    <strong>custom.birth_date (raw):</strong> {{ customer.metafields.custom.birth_date }}<br>
+    <strong>facts.birth_date:</strong> {{ customer.metafields.facts.birth_date.value }}<br>
+    <strong>All metafields:</strong> {{ customer.metafields }}<br>
+  </div>
+
+  {% assign customer_birthdate = customer.metafields.custom.birth_date.value %}
+  {% assign customer_age_verified = false %}
+  {% if customer.tags contains 'age-verified' %}
+    {% assign customer_age_verified = true %}
+  {% endif %}
+
+  <!-- Ihr bestehender Code hier... -->
+  <style>
+    .birthdate-profile {
+      background: #f0fdf4;
+      border: 1px solid #a7f3d0;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      color: #065f46;
+    }
+    
+    .birthdate-display {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .birthdate-value {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .age-badge {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .no-birthdate {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      color: #92400e;
+    }
+    
+    .readonly-info {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .contact-support {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #92400e;
+    }
+    
+    .verification-status {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      color: #065f46;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+
+  {% if customer_birthdate %}
+    {% assign birth_year = customer_birthdate | date: '%Y' | plus: 0 %}
+    {% assign birth_month = customer_birthdate | date: '%m' | plus: 0 %}
+    {% assign birth_day = customer_birthdate | date: '%d' | plus: 0 %}
+    {% assign current_year = 'now' | date: '%Y' | plus: 0 %}
+    {% assign current_month = 'now' | date: '%m' | plus: 0 %}
+    {% assign current_day = 'now' | date: '%d' | plus: 0 %}
+    
+    {% assign age = current_year | minus: birth_year %}
+    {% if current_month < birth_month %}
+      {% assign age = age | minus: 1 %}
+    {% elsif current_month == birth_month and current_day < birth_day %}
+      {% assign age = age | minus: 1 %}
+    {% endif %}
+    
+    <div class="birthdate-profile">
+      <div class="birthdate-display">
+        <span>🎂</span>
+        <div>
+          <strong>Geburtsdatum:</strong>
+          <span class="birthdate-value">{{ customer_birthdate | date: '%d.%m.%Y' }}</span>
+        </div>
+        <div class="age-badge">
+          {% if age >= 18 %}
+            ✅ {{ age }} Jahre (Volljährig)
+          {% else %}
+            ⚠️ {{ age }} Jahre (Minderjährig)
+          {% endif %}
+        </div>
+      </div>
+      
+      {% if customer_age_verified %}
+        <div class="verification-status">
+          <span>✅</span>
+          <span><strong>Altersverifiziert:</strong> Für Käufe ab 18 Jahren freigegeben</span>
+        </div>
+      {% endif %}
+      
+      <div class="readonly-info">
+        <span>🔒</span>
+        <span>Geburtsdatum ist schreibgeschützt und kann nicht geändert werden</span>
+      </div>
+      
+      <div class="contact-support">
+        <strong>Änderungen erforderlich?</strong><br>
+        Kontaktieren Sie unseren <a href="/pages/contact" style="color: inherit; text-decoration: underline;">Kundensupport</a> für Korrekturen am Geburtsdatum.
+      </div>
+    </div>
+  {% else %}
+    <div class="no-birthdate">
+      <span>📝</span>
+      <strong>Kein Geburtsdatum gespeichert</strong><br>
+      <small>Das Geburtsdatum wird automatisch bei der ersten Altersverifikation im Warenkorb gespeichert.</small>
+    </div>
+  {% endif %}
+
+{% else %}
+  <div style="text-align: center; padding: 20px; color: #6b7280;">
+    <p>Bitte <a href="/account/login" style="color: #3b82f6;">anmelden</a> um das Profil anzuzeigen</p>
+  </div>
+{% endif %}

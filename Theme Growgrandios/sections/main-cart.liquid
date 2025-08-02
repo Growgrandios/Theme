@@ -1,0 +1,961 @@
+{%- comment -%}theme-check-disable NestedSnippet{%- endcomment -%}
+{{ 'cart-items.css' | asset_url | stylesheet_tag }}
+
+{%- if cart != empty -%}
+  <link rel="stylesheet" id="cart-summary-css" href="{{ 'cart-summary.css' | asset_url }}">
+{%- endif -%}
+
+{%- if section.settings.show_order_note -%}
+  <script src="{{ 'cart-note.js' | asset_url }}" defer="defer"></script>
+{%- endif -%}
+
+{%- comment -%}
+  Prüft, ob im Warenkorb ein Produkt mit Tag "ab18" liegt
+{%- endcomment -%}
+{% assign needs_age_check = false %}
+{% for item in cart.items %}
+  {% if item.product.tags contains 'ab18' %}
+    {% assign needs_age_check = true %}
+    {% break %}
+  {% endif %}
+{% endfor %}
+
+{%- comment -%}
+  Prüfe ob Kunde eingeloggt ist und bereits ein Geburtsdatum hat
+{%- endcomment -%}
+{% assign customer_birthdate_from_metafield = '' %}
+{% assign is_customer_pre_verified_by_tag = false %}
+{% if customer %}
+  {% assign customer_birthdate_from_metafield = customer.metafields.custom.birth_date.value %}
+  {% if customer.tags contains 'age-verified' %}
+    {% assign is_customer_pre_verified_by_tag = true %}
+  {% endif %}
+{% endif %}
+
+<style>
+  .age-verification {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    margin: 20px 0;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+  
+  .age-verification__title {
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #1e293b;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .age-verification__subtitle {
+    color: #64748b;
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  
+  .modern-date-container {
+    position: relative;
+    margin: 16px 0;
+  }
+  
+  .modern-date-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #374151;
+    font-size: 15px;
+  }
+  
+  .modern-date-input {
+    width: 100%;
+    padding: 16px 20px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 16px;
+    background: #ffffff;
+    transition: all 0.2s ease;
+    color: #374151;
+    font-family: inherit;
+    appearance: none;
+    padding-right: 50px;
+    position: relative;
+  }
+  
+  .modern-date-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .modern-date-input::-webkit-calendar-picker-indicator {
+    background-color: transparent;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="%233b82f6" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="%233b82f6" stroke-width="2" fill="none"/><line x1="16" y1="2" x2="16" y2="6" stroke="%233b82f6" stroke-width="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="%233b82f6" stroke-width="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="%233b82f6" stroke-width="2"/><rect x="8" y="14" width="2" height="2" fill="%233b82f6"/><rect x="14" y="14" width="2" height="2" fill="%233b82f6"/></svg>');
+    background-size: 20px;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    opacity: 1;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  
+  .modern-date-input::-webkit-calendar-picker-indicator:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+    transform: translateY(-50%) scale(1.1);
+  }
+  
+  .modern-date-input { /* Ensure correct accent color for date picker icon */
+    accent-color: #3b82f6;
+  }
+  
+  .modern-date-input.valid {
+    border-color: #10b981;
+    background-color: #f0fdf4;
+  }
+  
+  .modern-date-input.invalid {
+    border-color: #ef4444;
+    background-color: #fef2f2;
+  }
+  
+  .age-status {
+    margin-top: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    display: none !important; /* Ensure it's hidden initially */
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+  }
+  
+  .age-status.show {
+    display: flex !important; /* Use flex for icon and text alignment */
+    opacity: 1;
+    transform: translateY(0);
+    align-items: center; /* Align icon and text vertically */
+    gap: 8px; /* Space between icon and text */
+  }
+  
+  .age-status.success {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+  }
+  
+  .age-status.error {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+  }
+  
+  .customer-verified {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+    color: #065f46;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+  }
+  
+  .btn--disabled {
+    background-color: #9ca3af !important;
+    border-color: #9ca3af !important;
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    transition: all 0.3s ease !important;
+  }
+  
+  .checkout-button-enabled { /* Optional: for animation when enabled */
+    animation: enableButton 0.3s ease-out;
+  }
+  
+  @keyframes enableButton {
+    0% { transform: scale(0.95); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  
+  .age-verification__info {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 20px;
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.5;
+  }
+  
+  .age-verification__postal-info {
+    background: #fffbeb;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+    font-size: 14px;
+    color: #92400e;
+    line-height: 1.5;
+  }
+  
+  @media (max-width: 768px) {
+    .age-verification {
+      padding: 20px 16px;
+      margin: 16px 0;
+      border-radius: 12px;
+    }
+    
+    .age-verification__title {
+      font-size: 16px;
+    }
+    
+    .modern-date-input {
+      font-size: 16px;
+      padding: 14px 16px;
+      padding-right: 46px; /* Space for custom calendar icon */
+    }
+  }
+</style>
+
+<div class="container">
+  <form class="cart form{% if cart != empty %} cart--with-items gap-theme heading--{{ section.settings.heading_align }}{% endif %}" id="cart" action="{{ routes.cart_url }}" method="post">
+    <div class="cart__items">
+      {%- if section.settings.show_page_title -%}
+       <h1 class="h2 mb-10{% if cart != empty %} {{ section.settings.heading_align }}{% else %} text-center{% endif %} js-cart-title">Warenkorb</h1>
+      {%- endif -%}
+
+      {%- if settings.show_free_shipping_notice and cart != empty -%}
+        {% render 'free-shipping-notice' %}
+      {%- endif -%}
+
+      <div class="alert mt-6 mb-6 bg-error-bg text-error-text" id="cart-errors" role="alert" hidden></div>
+
+      {% render 'cart-items' %}
+
+      {%- if settings.show_recommendations and cart != empty -%}
+        <div class="cart-page-recommendations mt-8">
+          {%- liquid
+            if settings.recommendations_layout == 'carousel'
+              assign grid_classes = 'grid grid-flow-col auto-cols-1 md:auto-cols-2 gap-x-theme'
+            else
+              assign grid_classes = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2 gap-x-theme'
+            endif
+          -%}
+          {%- render 'recommendations',
+                  is_cart: true,
+                  products_to_show: settings.recommendations_to_show,
+                  heading: settings.recommendations_heading,
+                  layout: settings.recommendations_layout,
+                  grid_classes: grid_classes,
+                  always_open_quickbuy: true
+          -%}
+        </div>
+      {%- endif -%}
+
+      {%- if section.settings.show_shipping_calculator and cart != empty -%}
+        <div class="cart__shipping-calculator panel mt-8">
+          {% render 'shipping-calculator',
+            id: 'cart',
+            default_country: section.settings.shipping_calculator_default_country
+          %}
+        </div>
+      {%- endif -%}
+    </div>
+
+    {%- if cart != empty -%}
+      <div class="cart__summary p-6 md:p-8" id="cart-summary" data-section="{{ section.id }}">
+        <h2 class="h5">Deine Bestellung</h2>
+
+          {%- if section.settings.show_order_note -%}
+            <details-disclosure class="block mt-6">
+              <details class="cart-note-disclosure disclosure disclosure--row">
+                <summary>
+                  <div class="flex justify-between items-center">
+                    <span class="js-show-note">
+                      {%- if cart.note == blank -%}
+                        {{- 'cart.note.add' | t -}}
+                      {%- else -%}
+                        {{- 'cart.note.edit' | t -}}
+                      {%- endif -%}
+                    </span>
+                    <span class="disclosure__toggle">
+                      {%- if settings.disclosure_toggle == 'plus' -%}
+                        {% render 'icon-plus' %}
+                      {%- else -%}
+                        {% render 'icon-chevron-down' %}
+                      {%- endif -%}
+                    </span>
+                  </div>
+                </summary>
+                <div class="disclosure__panel has-motion">
+                  <div class="disclosure__content">
+                    <cart-note>
+                      <label class="visually-hidden" for="cart-note">{{ 'cart.note.label' | t }}</label>
+                      <textarea class="input w-full" id="cart-note" name="note" rows="4">{{ cart.note }}</textarea>
+                    </cart-note>
+                  </div>
+                </div>
+              </details>
+            </details-disclosure>
+          {%- endif -%}
+
+          {%- if section.settings.show_tax_and_shipping -%}
+            <div class="mt-6 rte">
+              {%- if cart.taxes_included and shop.shipping_policy.body != blank -%}
+                {{- 'cart.general.taxes_included_shipping_at_checkout_html' | t: link: shop.shipping_policy.url -}}
+              {%- elsif cart.taxes_included -%}
+                {{- 'cart.general.taxes_included_shipping_at_checkout' | t -}}
+              {%- elsif shop.shipping_policy.body != blank -%}
+                {{- 'cart.general.taxes_and_shipping_at_checkout_html' | t: link: shop.shipping_policy.url -}}
+              {%- else -%}
+                {{- 'cart.general.taxes_and_shipping_at_checkout' | t -}}
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+
+          <!-- PERSISTENTE ALTERSVERIFIKATION -->
+          <div id="age-verification-container" data-needs-check="{{ needs_age_check }}" data-age-verified="{{ is_customer_pre_verified_by_tag }}">
+            {%- if is_customer_pre_verified_by_tag -%}
+              <div class="customer-verified" id="customer-verified-display">
+                <span>✅</span>
+                <div>
+                  <strong>Altersverifikation bestätigt</strong>
+                  <div style="font-size: 12px; font-weight: normal; margin-top: 2px;">
+                    Geburtsdatum: {{ customer_birthdate_from_metafield | date: '%d.%m.%Y' }}
+                  </div>
+                </div>
+              </div>
+            {%- else -%}
+              <div class="age-verification" id="age-verification-form-display" {% unless needs_age_check %}style="display: none;"{% endunless %}>
+                <div class="age-verification__title">
+                  🔞 Altersverifikation erforderlich
+                </div>
+                <div class="age-verification__subtitle">
+                  Dein Warenkorb enthält Produkte, die nur an Personen ab 18 Jahren abgegeben werden dürfen.
+                </div>
+                
+                <div class="modern-date-container">
+                  <label for="birth-date" class="modern-date-label">
+                    Geburtsdatum eingeben:
+                  </label>
+                  <input 
+                    type="date" 
+                    id="birth-date" 
+                    name="attributes[Geburtsdatum]" 
+                    class="modern-date-input"
+                    max="{{ 'now' | date: '%Y-%m-%d' }}" 
+                    value="{{ customer_birthdate_from_metafield | date: '%Y-%m-%d' }}"
+                    placeholder="TT.MM.JJJJ">
+                  
+                  <div id="age-success" class="age-status success">
+                    <span>✅</span>
+                    <span>Altersverifikation erfolgreich bestätigt</span>
+                  </div>
+                  
+                  <div id="age-error" class="age-status error">
+                    <span>❌</span>
+                    <span>Du musst mindestens 18 Jahre alt sein</span>
+                  </div>
+                </div>
+                
+                <div class="age-verification__postal-info">
+                  📦 <strong>Wichtiger Hinweis:</strong> Bei der Zustellung wird dein Alter vom Postboten überprüft und du musst dich ausweisen.
+                </div>
+                
+                <div class="age-verification__info">
+                  Gemäß Jugendschutzgesetz erfolgt eine doppelte Altersverifikation: Online und bei der Paketzustellung durch den Versanddienstleister.
+                </div>
+              </div>
+            {%- endif -%}
+          </div>
+          {%- if cart.cart_level_discount_applications.size > 0 -%}
+            <ul class="mt-3 mb-2 font-bold" aria-label="{{ 'customer.order.discount' | t }}" role="list">
+              {%- for discount in cart.cart_level_discount_applications -%}
+                <li class="mt-2">
+                  <div class="discount text-sm inline-flex items-center" dir="auto">
+                    {% render 'icon-tags' %} {{ discount.title | escape_once }} (-{{ discount.total_allocated_amount | money }})
+                  </div>
+                </li>
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+          <div class="flex justify-between items-center mt-6">
+            <h3 class="mb-0 h6">{{ 'cart.summary.subtotal' | t }}:</h3>
+            <p class="mb-0 h6">{%- render 'price-as-money', price: cart.total_price, show_money_with_currency: true -%}</p>
+          </div>
+
+          {%- if section.settings.cart_terms_page != blank -%}
+            <cart-terms class="block mt-6">
+              <input type="checkbox" class="checkbox js-cart-terms-checkbox" id="cart-terms" form="cart">
+              <label for="cart-terms">
+                <span class="rte">{{ 'cart.terms.agreement_html' | t: terms_url: section.settings.cart_terms_page }}</span>
+              </label>
+            </cart-terms>
+          {%- endif -%}
+          <div class="mt-6">
+            <button class="btn btn--primary btn--icon-with-text w-full" name="checkout" id="checkout-button" disabled>
+              {%- if settings.cart_icon == 'bag' -%}
+                {%- render 'icon-bag' -%}
+              {%- elsif settings.cart_icon == 'basket' -%}
+                {%- render 'icon-basket' -%}
+              {%- else -%}
+                {%- render 'icon-cart' -%}
+              {%- endif -%}
+              {{- 'cart.summary.checkout' | t -}}
+            </button>
+          </div>
+          {%- if additional_checkout_buttons and section.settings.cart_terms_page == blank and section.settings.show_additional_checkout_buttons -%}
+            <div class="dynamic-cart-btns" id="additional-checkout-buttons" style="display: none;">
+              {{ content_for_additional_checkout_buttons }}
+            </div>
+          {%- endif -%}
+
+          {%- if section.settings.continue_shopping_page != blank -%}
+            <a href="{{ section.settings.continue_shopping_page.url }}" class="link block text-center w-full mt-6">
+              {{ 'cart.summary.continue_shopping' | t }}
+            </a>
+          {%- endif -%}
+      </div>
+    {%- endif -%}
+  </form>
+</div>
+
+{%- if section.settings.cart_terms_page != blank -%}
+  <script src="{{ 'cart-terms.js' | asset_url }}" defer="defer"></script>
+{%- endif -%}
+
+<script>
+class AgeVerificationManager {
+  constructor() {
+    // Data passed from Liquid
+    this.isUserLoggedIn = {{ customer | json }} !== null;
+    this.customerBirthdateFromMetafield = '{{ customer_birthdate_from_metafield | date: "%Y-%m-%d" }}'; // Raw value from metafield
+    // is_customer_pre_verified_by_tag is read from data-age-verified attribute later
+
+    // DOM Elements - will be cached in initialize()
+    this.elements = {};
+    this.mutationDebounce = null; // For debouncing MutationObserver
+
+    // State variables
+    this.isCustomerPreVerifiedByTag = false; // Will be set from data attribute
+    this.currentCartNeedsAgeCheck = false;   // Will be set from data attribute
+    this.persistedBirthDate = null;
+    this.persistedAgeIsValid = false;
+    this.currentInputAgeIsValid = false; // Validity based on current text input, if any
+
+    console.log('🔧 AgeVerificationManager: Constructor called.');
+    this.initialize();
+  }
+
+  initialize() {
+    console.log('🔄 AgeVerificationManager: Initializing...');
+    this.cacheElements();
+    if (!this.elements.container) {
+        console.warn('Age verification container not found. Manager will not operate.');
+        return;
+    }
+
+    // Read initial state from data attributes set by Liquid
+    this.isCustomerPreVerifiedByTag = this.elements.container.dataset.ageVerified === 'true';
+    this.currentCartNeedsAgeCheck = this.elements.container.dataset.needsCheck === 'true';
+
+    console.log(`[DEBUG] Initial State: PreVerifiedByTag=${this.isCustomerPreVerifiedByTag}, CartNeedsCheck=${this.currentCartNeedsAgeCheck}`);
+
+    this.loadStateFromSessionAndMetafields();
+    this.setupEventListeners();
+    this.updateVerificationFormVisibility();
+    this.updateCheckoutButtonState(); // Initial button state
+    console.log('✅ AgeVerificationManager: Initialization complete.');
+  }
+
+  cacheElements() {
+    this.elements = {
+      container: document.getElementById('age-verification-container'),
+      ageVerificationFormDisplay: document.getElementById('age-verification-form-display'), // The div wrapping the form
+      birthDateInput: document.getElementById('birth-date'),
+      checkoutButton: document.getElementById('checkout-button'),
+      additionalButtons: document.getElementById('additional-checkout-buttons'), // Added this
+      cartForm: document.getElementById('cart'),
+      ageSuccessMessage: document.getElementById('age-success'),
+      ageErrorMessage: document.getElementById('age-error'),
+      cartTermsCheckbox: document.getElementById('cart-terms')
+    };
+  }
+
+  loadStateFromSessionAndMetafields() {
+    console.log('[DEBUG] 💾 AgeVerificationManager: Loading state from session/metafields...');
+    this.persistedBirthDate = sessionStorage.getItem('persistentBirthDate');
+    this.persistedAgeIsValid = sessionStorage.getItem('persistentAgeValid') === 'true';
+    console.log(`[DEBUG] Session values: persistedBirthDate=${this.persistedBirthDate}, persistedAgeIsValid=${this.persistedAgeIsValid}`);
+
+    let dateToUse = null;
+
+    if (this.isCustomerPreVerifiedByTag && this.customerBirthdateFromMetafield && this.customerBirthdateFromMetafield !== '') {
+        console.log(`[DEBUG] 👤 Customer pre-verified by tag. Using metafield birthdate for display: ${this.customerBirthdateFromMetafield}`);
+        dateToUse = this.customerBirthdateFromMetafield;
+        this.currentInputAgeIsValid = true; // They are verified
+    } else if (this.persistedBirthDate) {
+        console.log(`[DEBUG] Sesh: Found persisted birth date in session: ${this.persistedBirthDate}`);
+        dateToUse = this.persistedBirthDate;
+        this.currentInputAgeIsValid = this.persistedAgeIsValid;
+    } else if (this.isUserLoggedIn && this.customerBirthdateFromMetafield && this.customerBirthdateFromMetafield !== '' && this.currentCartNeedsAgeCheck) {
+        console.log(`[DEBUG] 👤 Logged in, no session data. Prefilling from customer metafield: ${this.customerBirthdateFromMetafield}`);
+        dateToUse = this.customerBirthdateFromMetafield;
+        if (dateToUse) {
+            const age = this.calculateAge(dateToUse);
+            this.currentInputAgeIsValid = age >= 18;
+            sessionStorage.setItem('persistentBirthDate', dateToUse);
+            sessionStorage.setItem('persistentAgeValid', this.currentInputAgeIsValid.toString());
+             console.log(`[DEBUG] Validated prefilled metafield date. Age: ${age}, Valid: ${this.currentInputAgeIsValid}. Persisted to session.`);
+        } else {
+            this.currentInputAgeIsValid = false;
+        }
+    } else {
+        console.log('[DEBUG] 🆕 No pre-existing valid date found. User needs to input.');
+        this.currentInputAgeIsValid = false;
+    }
+
+    if (this.elements.birthDateInput && dateToUse) {
+      this.elements.birthDateInput.value = dateToUse;
+      console.log(`[DEBUG] Set birthDateInput value to: ${dateToUse}`);
+    }
+    
+    if (this.currentCartNeedsAgeCheck && !this.isCustomerPreVerifiedByTag && dateToUse) {
+        this.showValidationFeedback(this.currentInputAgeIsValid);
+    } else if (!this.currentCartNeedsAgeCheck || this.isCustomerPreVerifiedByTag) {
+        this.hideAllStatusMessages();
+    }
+  }
+  
+  setupEventListeners() {
+    console.log('[DEBUG] 🔗 AgeVerificationManager: Setting up event listeners...');
+    if (this.elements.cartForm) {
+        this.elements.cartForm.addEventListener('submit', (e) => this.handleCartUpdateAction(e));
+    }
+    
+    // Delegated event listener for checkout buttons and cart update actions
+    document.body.addEventListener('click', (e) => {
+        if (e.target.closest('[name="checkout"], [data-type="checkout-button"]')) {
+            console.log('[DEBUG] Checkout button clicked. Performing final validation.');
+            if (!this.canProceedToCheckout()) {
+                e.preventDefault();
+                console.warn('[DEBUG] Checkout prevented by final validation check.');
+                if (this.currentCartNeedsAgeCheck && !this.isCustomerPreVerifiedByTag && !this.currentInputAgeIsValid && this.elements.birthDateInput) {
+                    this.elements.birthDateInput.focus();
+                    this.showValidationFeedback(false);
+                }
+            } else {
+                 console.log('[DEBUG] Final validation passed. Proceeding to checkout.');
+            }
+        } else if (e.target.closest('.cart__remove, [data-cart-remove], .remove-item, [name="update"], [data-cart-update], button[name="updates[]"]')) {
+            console.log('[DEBUG] 🛒 Cart update action detected (click). Preparing to preserve data.');
+            this.prepareToPreserveDataOnUpdate();
+        }
+    });
+    
+    if (this.elements.birthDateInput) {
+        this.elements.birthDateInput.addEventListener('input', () => this.handleDateInputChange());
+        this.elements.birthDateInput.addEventListener('change', () => this.handleDateInputChange()); 
+    }
+
+    if (this.elements.cartTermsCheckbox) {
+        this.elements.cartTermsCheckbox.addEventListener('change', () => this.updateCheckoutButtonState());
+    }
+
+    // Listener for Shopify section rendering (e.g., after AJAX cart updates)
+    document.addEventListener('shopify:section:load', (event) => {
+        if (this.elements.cartForm && event.target.contains(this.elements.cartForm)) {
+             console.log('[DEBUG] 🛍️ Cart section reloaded (shopify:section:load). Re-initializing AgeVerificationManager.');
+             this.reinitializeAfterCartUpdate();
+        }
+    });
+    
+    // Fallback MutationObserver
+    const cartNodeToObserve = document.getElementById('cart') || document.querySelector('form.cart'); // More specific selector
+    if (cartNodeToObserve) {
+         const observer = new MutationObserver((mutationsList) => {
+             for(const mutation of mutationsList) {
+                 if (mutation.type === 'childList' || mutation.type === 'subtree') {
+                     if (document.getElementById('checkout-button') && document.getElementById('age-verification-container')) {
+                         clearTimeout(this.mutationDebounce);
+                         this.mutationDebounce = setTimeout(() => {
+                             console.log('[DEBUG] 👀 MutationObserver detected cart changes. Re-initializing.');
+                             this.reinitializeAfterCartUpdate();
+                         }, 350); 
+                         return; 
+                     }
+                 }
+             }
+         });
+         observer.observe(cartNodeToObserve, { childList: true, subtree: true });
+         console.log('[DEBUG] MutationObserver attached to cart form.');
+     } else {
+         console.warn('[DEBUG] Cart form node not found for MutationObserver.');
+     }
+  }
+
+  prepareToPreserveDataOnUpdate() {
+    if (this.elements.ageVerificationFormDisplay && 
+        getComputedStyle(this.elements.ageVerificationFormDisplay).display !== 'none' &&
+        this.elements.birthDateInput && this.elements.birthDateInput.value) {
+        
+        const currentInputValue = this.elements.birthDateInput.value;
+        const age = this.calculateAge(currentInputValue);
+        const isValid = age >= 18;
+
+        sessionStorage.setItem('persistentBirthDate', currentInputValue);
+        sessionStorage.setItem('persistentAgeValid', isValid.toString());
+        console.log(`[DEBUG] 💾 Input detected. Temporarily saved to session before cart update: ${currentInputValue}, Valid: ${isValid}`);
+    } else {
+        console.log('[DEBUG] No input to preserve or form not visible.');
+    }
+  }
+
+  reinitializeAfterCartUpdate() {
+    console.log('[DEBUG] 🔄 AgeVerificationManager: Re-initializing after cart/DOM update...');
+    const oldNeedsCheck = this.currentCartNeedsAgeCheck;
+    
+    this.cacheElements(); 
+    if (!this.elements.container) {
+        console.warn('[DEBUG] Age verification container not found after update. Manager will not operate.');
+        return;
+    }
+
+    this.isCustomerPreVerifiedByTag = this.elements.container.dataset.ageVerified === 'true';
+    this.currentCartNeedsAgeCheck = this.elements.container.dataset.needsCheck === 'true';
+    console.log(`[DEBUG] After Update State: PreVerifiedByTag=${this.isCustomerPreVerifiedByTag}, CartNeedsCheck=${this.currentCartNeedsAgeCheck}`);
+
+    if (oldNeedsCheck && !this.currentCartNeedsAgeCheck && !this.isCustomerPreVerifiedByTag) {
+        console.log('[DEBUG] 🗑️ Age check no longer required by cart. Clearing session data.');
+        sessionStorage.removeItem('persistentBirthDate');
+        sessionStorage.removeItem('persistentAgeValid');
+        this.persistedBirthDate = null;
+        this.persistedAgeIsValid = false;
+        if(this.elements.birthDateInput) this.elements.birthDateInput.value = '';
+        this.currentInputAgeIsValid = false;
+    } else {
+        this.loadStateFromSessionAndMetafields();
+    }
+    
+    this.updateVerificationFormVisibility(); // Ensure form visibility is correct
+    this.setupEventListeners(); // Re-attach listeners to potentially new DOM elements
+    this.updateCheckoutButtonState();
+    console.log('[DEBUG] ✅ AgeVerificationManager: Re-initialization complete after update.');
+  }
+  
+  updateVerificationFormVisibility() {
+    if (!this.elements.ageVerificationFormDisplay || !this.elements.container) {
+        console.warn('[DEBUG] Cannot update form visibility, elements missing.');
+        return;
+    }
+
+    if (this.isCustomerPreVerifiedByTag) {
+        this.elements.ageVerificationFormDisplay.style.display = 'none';
+        console.log('[DEBUG] Form hidden: Customer pre-verified by tag.');
+    } else if (this.currentCartNeedsAgeCheck) {
+        this.elements.ageVerificationFormDisplay.style.display = ''; 
+        console.log('[DEBUG] Form shown: Cart needs age check.');
+    } else {
+        this.elements.ageVerificationFormDisplay.style.display = 'none';
+        console.log('[DEBUG] Form hidden: Cart does not need age check.');
+    }
+  }
+
+  handleCartUpdateAction(event) {
+    // This is for form submissions with "update" button.
+    // Click on "x" (remove) is handled by the delegated body click listener.
+    if (event.submitter && (event.submitter.name === 'update' || event.submitter.getAttribute('name') === 'updates[]')) {
+        console.log('[DEBUG] 🛒 Cart update form submission (update button). Preparing to preserve.');
+        this.prepareToPreserveDataOnUpdate();
+    }
+  }
+  
+  handleDateInputChange() {
+    if (!this.elements.birthDateInput) return;
+    const birthDateStr = this.elements.birthDateInput.value;
+    console.log(`[DEBUG] Date input changed: ${birthDateStr}`);
+
+    if (!birthDateStr) {
+        this.currentInputAgeIsValid = false;
+        this.hideAllStatusMessages();
+        sessionStorage.removeItem('persistentBirthDate');
+        sessionStorage.removeItem('persistentAgeValid');
+        console.log('[DEBUG] Cleared birth date from input and sessionStorage.');
+    } else {
+        const age = this.calculateAge(birthDateStr);
+        this.currentInputAgeIsValid = age >= 18;
+        
+        sessionStorage.setItem('persistentBirthDate', birthDateStr);
+        sessionStorage.setItem('persistentAgeValid', this.currentInputAgeIsValid.toString());
+        console.log(`[DEBUG] Input age: ${age}. Valid: ${this.currentInputAgeIsValid}. Saved to session.`);
+        
+        this.showValidationFeedback(this.currentInputAgeIsValid);
+
+        console.log(`[DEBUG] Checking conditions to save to account: currentInputAgeIsValid=${this.currentInputAgeIsValid}, isUserLoggedIn=${this.isUserLoggedIn}, !isCustomerPreVerifiedByTag=${!this.isCustomerPreVerifiedByTag}`);
+        if (this.currentInputAgeIsValid && this.isUserLoggedIn && !this.isCustomerPreVerifiedByTag) {
+            this.saveBirthDateToCustomerAccount(birthDateStr);
+        }
+    }
+    this.updateCheckoutButtonState();
+  }
+
+  calculateAge(birthDateString) {
+    if (!birthDateString) return 0;
+    const birth = new Date(birthDateString);
+    if (isNaN(birth.getTime())) {
+        console.warn(`[DEBUG] Invalid date format for age calculation: ${birthDateString}`);
+        return -1;
+    }
+
+    const today = new Date();
+    today.setHours(0,0,0,0); 
+    birth.setHours(0,0,0,0); 
+
+
+    if (birth > today || birth.getFullYear() < 1900 || birth.getFullYear() > today.getFullYear()) {
+        console.warn(`[DEBUG] Birth date out of reasonable range: ${birthDateString}`);
+        return -1; 
+    }
+
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDifference = today.getMonth() - birth.getMonth();
+    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birth.getDate())) {
+        age--;
+    }
+    console.log(`[DEBUG] Calculated age for ${birthDateString}: ${age}`);
+    return age < 0 ? 0 : age; 
+  }
+
+  async saveBirthDateToCustomerAccount(birthDate) {
+    console.log(`[DEBUG] saveBirthDateToCustomerAccount CALLED. User logged in: ${this.isUserLoggedIn}, Pre-verified by tag: ${this.isCustomerPreVerifiedByTag}`);
+    // Condition to call this function is already checked in handleDateInputChange
+    // if (!this.isUserLoggedIn || this.isCustomerPreVerifiedByTag) {
+    //     console.log('[DEBUG] Not saving to account: either not logged in or already tag-verified.');
+    //     return false;
+    // }
+    
+    console.log(`[DEBUG] 👤 Attempting to save birthdate to customer account: ${birthDate}`);
+    try {
+      const formData = new FormData();
+      formData.append('form_type', 'customer');
+      formData.append('utf8', '✓');
+      formData.append('customer[metafields][custom][birth_date]', birthDate); 
+      // console.log('[DEBUG] FormData to be sent:', ...formData.entries()); // For debugging FormData
+
+      const response = await fetch('/account', { method: 'POST', body: formData });
+      console.log(`[DEBUG] Save response status: ${response.status}`); 
+      if (response.ok || response.redirected || response.status === 200 || response.status === 302 ) { // Added 302 for redirects
+        console.log('[DEBUG] ✅ Birthdate metafield update submitted to customer account.');
+      } else {
+        const errorBody = await response.text(); 
+        console.error(`[DEBUG] ❌ Error saving birthdate to customer account. Status: ${response.status}, Body: ${errorBody}`); 
+      }
+    } catch (error) {
+      console.error('[DEBUG] ❌ Exception while saving birthdate to customer account:', error); 
+    }
+  }
+
+  updateCheckoutButtonState() {
+    if (!this.elements.checkoutButton) {
+        console.warn('[DEBUG] Checkout button not found for state update.');
+        return;
+    }
+
+    const termsAreChecked = this.elements.cartTermsCheckbox ? this.elements.cartTermsCheckbox.checked : true;
+    let canProceed = false;
+
+    if (this.isCustomerPreVerifiedByTag) { 
+        canProceed = termsAreChecked;
+    } else if (this.currentCartNeedsAgeCheck) { 
+        canProceed = this.currentInputAgeIsValid && termsAreChecked;
+    } else { 
+        canProceed = termsAreChecked;
+    }
+    
+    this.elements.checkoutButton.disabled = !canProceed;
+
+    if (canProceed) {
+        this.elements.checkoutButton.classList.remove('btn--disabled');
+        if (this.elements.additionalButtons) this.elements.additionalButtons.style.display = '';
+    } else {
+        this.elements.checkoutButton.classList.add('btn--disabled');
+        if (this.elements.additionalButtons) this.elements.additionalButtons.style.display = 'none';
+    }
+    console.log(`[DEBUG] 🚀 Checkout Button: ${canProceed ? 'ENABLED' : 'DISABLED'}. NeedsCheck: ${this.currentCartNeedsAgeCheck}, PreVerified: ${this.isCustomerPreVerifiedByTag}, InputValid: ${this.currentInputAgeIsValid}, Terms: ${termsAreChecked}`);
+  }
+  
+  canProceedToCheckout() {
+      const termsAreChecked = this.elements.cartTermsCheckbox ? this.elements.cartTermsCheckbox.checked : true;
+      if (this.isCustomerPreVerifiedByTag) return termsAreChecked;
+      if (this.currentCartNeedsAgeCheck) return this.currentInputAgeIsValid && termsAreChecked;
+      return termsAreChecked;
+  }
+
+  hideAllStatusMessages() {
+    if (this.elements.ageSuccessMessage) this.elements.ageSuccessMessage.classList.remove('show');
+    if (this.elements.ageErrorMessage) this.elements.ageErrorMessage.classList.remove('show');
+    if (this.elements.birthDateInput) {
+        this.elements.birthDateInput.classList.remove('valid', 'invalid');
+    }
+  }
+
+  showValidationFeedback(isValid) {
+    this.hideAllStatusMessages(); 
+    if (isValid) {
+        if (this.elements.ageSuccessMessage) this.elements.ageSuccessMessage.classList.add('show');
+        if (this.elements.birthDateInput) this.elements.birthDateInput.classList.add('valid');
+    } else {
+        if (this.currentCartNeedsAgeCheck && !this.isCustomerPreVerifiedByTag) {
+            if (this.elements.ageErrorMessage) this.elements.ageErrorMessage.classList.add('show');
+            if (this.elements.birthDateInput) this.elements.birthDateInput.classList.add('invalid');
+        }
+    }
+  }
+}
+
+// Robust Initialization
+function ShopifyCartAgeVerificationInit() {
+    if (document.getElementById('age-verification-container') && !window.ShopifyCartAgeVerificationManagerInstance) {
+        console.log('[DEBUG] Initializing AgeVerificationManager instance.');
+        window.ShopifyCartAgeVerificationManagerInstance = new AgeVerificationManager();
+    } else if (window.ShopifyCartAgeVerificationManagerInstance && document.getElementById('age-verification-container')) {
+        console.log('[DEBUG] AgeVerificationManager instance already exists, potentially re-initializing if needed due to cart update.');
+        // The instance itself handles re-initialization logic internally via reinitializeAfterCartUpdate
+        // This explicit call might be redundant if shopify:section:load works perfectly.
+        // window.ShopifyCartAgeVerificationManagerInstance.reinitializeAfterCartUpdate();
+    } else {
+        console.log('[DEBUG] Age verification container not found on this page, or instance already exists but container is gone.');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', ShopifyCartAgeVerificationInit);
+
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+    ShopifyCartAgeVerificationInit();
+}
+</script>
+      
+{% schema %}
+{
+  "name": "Cart",
+  "class": "cc-main-cart section section--template",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Heading"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_page_title",
+      "label": "Show the default page heading",
+      "info": "If hidden, you should provide a primary page heading (h1 tag) in another section with h1 capability (e.g. image banner, slideshow or background video) for SEO purposes.",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "heading_align",
+      "label": "Heading alignment",
+      "options": [
+        {
+          "value": "text-start",
+          "label": "Left"
+        },
+        {
+          "value": "text-center",
+          "label": "Center"
+        },
+        {
+          "value": "text-end",
+          "label": "Right"
+        }
+      ],
+      "default": "text-start"
+    },
+    {
+      "type": "header",
+      "content": "Cart items"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_backorder_text",
+      "label": "Show backorder text",
+      "default": true,
+      "info": "Only shows for products which use Shopify inventory tracking and can be purchased when out of stock."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "Show vendor",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Order summary"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_order_note",
+      "label": "Show order note",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tax_and_shipping",
+      "label": "Show tax status and shipping policy link",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_additional_checkout_buttons",
+      "label": "Show additional checkout options",
+      "default": true,
+      "info": "Display other gateways and quick checkout buttons. [Learn more](https://help.shopify.com/en/manual/payments/accelerated-checkouts)"
+    },
+    {
+      "type": "url",
+      "id": "cart_terms_page",
+      "label": "Terms and conditions link",
+      "info": "Additional checkout options will be hidden when cart terms are shown."
+    },
+    {
+      "type": "url",
+      "id": "continue_shopping_page",
+      "label": "Continue shopping link"
+    },
+    {
+      "type": "header",
+      "content": "Shipping calculator"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_shipping_calculator",
+      "label": "Show shipping calculator",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "shipping_calculator_default_country",
+      "label": "Default country",
+      "info": "If the customer is logged-in, their default shipping address details will be selected.",
+      "default": "United States"
+    }
+  ]
+}
+{% endschema %}
