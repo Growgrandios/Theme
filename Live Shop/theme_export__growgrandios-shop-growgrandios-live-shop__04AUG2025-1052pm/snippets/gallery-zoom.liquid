@@ -49,7 +49,7 @@
                           image: media,
                           src_width: src_width,
                           srcset_2x: true,
-                          lazy_load: false,
+                          lazy_load: true,
                           class: img_class,
                           disable_focal_point: true
                         %}
@@ -94,7 +94,7 @@
               {% render 'icon-chevron-right' %}
             </button>
 
-            <button type="button" class="media-ctrl__btn gallery-zoom__close pointer-events-auto absolute top-0 right-0 js-close-modal" name="close">
+            <button type="button" class="media-ctrl__btn gallery-zoom__close pointer-events-auto absolute top-0 right-0 js-close-modal" name="close" aria-label="{{ 'accessibility.close' | t }}">
               {% render 'icon-close' %}
               <span class="visually-hidden">{{ 'accessibility.close' | t }}</span>
             </button>

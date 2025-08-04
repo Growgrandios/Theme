@@ -1,3 +1,9 @@
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.has-motion').forEach((el) => el.classList.remove('has-motion'));
+  });
+}
+
 if (!customElements.get('gallery-zoom-open')) {
   class GalleryZoomOpen extends HTMLElement {
     connectedCallback() {
