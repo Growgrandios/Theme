@@ -61,7 +61,7 @@ if (!customElements.get('sticky-scroll-direction')) {
      */
     addListeners() {
       this.scrollListener = this.scrollListener || this.handleScroll.bind(this);
-      window.addEventListener('scroll', this.scrollListener);
+      window.addEventListener('scroll', this.scrollListener, { passive: true });
 
       this.scrollListener();
 

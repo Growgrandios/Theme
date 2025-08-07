@@ -26,6 +26,7 @@ class CarouselSlider extends HTMLElement {
     this.grid = this.querySelector('.slider__grid');
     this.nav = this.querySelector('.slider-nav');
     this.rtl = document.dir === 'rtl';
+    this.prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (this.nav) {
       this.prevBtn = this.querySelector('button[name="prev"]');
@@ -33,7 +34,7 @@ class CarouselSlider extends HTMLElement {
     }
 
     this.initSlider();
-    window.addEventListener('on:breakpoint-change', this.handleBreakpointChange.bind(this));
+    window.addEventListener('on:breakpoint-change', this.handleBreakpointChange.bind(this), { passive: true });
   }
 
   initSlider() {
@@ -74,7 +75,7 @@ class CarouselSlider extends HTMLElement {
     this.scrollHandler = debounce(this.handleScroll.bind(this));
     this.navClickHandler = this.handleNavClick.bind(this);
 
-    this.slider.addEventListener('scroll', this.scrollHandler);
+    this.slider.addEventListener('scroll', this.scrollHandler, { passive: true });
     this.nav.addEventListener('click', this.navClickHandler);
   }
 
@@ -104,7 +105,8 @@ class CarouselSlider extends HTMLElement {
       this.scrollPos = this.slider.scrollLeft - (this.slidesToScroll * this.slideSpan);
     }
 
-    this.slider.scrollTo({ left: this.scrollPos, behavior: 'smooth' });
+    const behavior = this.prefersReducedMotion ? 'auto' : 'smooth';
+    this.slider.scrollTo({ left: this.scrollPos, behavior });
   }
 
   /**

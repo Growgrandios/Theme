@@ -31,7 +31,7 @@ if (!customElements.get('sticky-atc-panel')) {
       if (this.productForm) observer.observe(this.productForm);
       if (this.productInfo) observer.observe(this.productInfo);
 
-      window.addEventListener('scroll', StickyAtcPanel.handleScroll);
+      window.addEventListener('scroll', StickyAtcPanel.handleScroll, { passive: true });
     }
 
     /**
