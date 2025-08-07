@@ -26,6 +26,7 @@ class CarouselSlider extends HTMLElement {
     this.grid = this.querySelector('.slider__grid');
     this.nav = this.querySelector('.slider-nav');
     this.rtl = document.dir === 'rtl';
+    this.prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (this.nav) {
       this.prevBtn = this.querySelector('button[name="prev"]');
@@ -104,7 +105,8 @@ class CarouselSlider extends HTMLElement {
       this.scrollPos = this.slider.scrollLeft - (this.slidesToScroll * this.slideSpan);
     }
 
-    this.slider.scrollTo({ left: this.scrollPos, behavior: 'smooth' });
+    const behavior = this.prefersReducedMotion ? 'auto' : 'smooth';
+    this.slider.scrollTo({ left: this.scrollPos, behavior });
   }
 
   /**
