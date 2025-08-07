@@ -259,7 +259,7 @@ if (!customElements.get('media-gallery')) {
     }
 
     addListeners() {
-      this.viewer.addEventListener('scroll', this.handleScroll.bind(this));
+      this.viewer.addEventListener('scroll', this.handleScroll.bind(this), { passive: true });
       if (this.controls) this.controls.addEventListener('click', this.handleNavClick.bind(this));
       if (this.thumbs) this.thumbs.addEventListener('click', this.handleThumbClick.bind(this));
       this.resizeHandler = this.resizeHandler || this.handleResize.bind(this);

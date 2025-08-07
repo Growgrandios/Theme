@@ -959,7 +959,7 @@ class StoreHeader extends HTMLElement {
       if (theme.mediaMatches.md && !this.stickyInitialised) {
         this.stickyInitialised = true;
         // Animate the menu in/out on scroll up/down
-        window.addEventListener('scroll', this.handleScroll.bind(this));
+        window.addEventListener('scroll', this.handleScroll.bind(this), { passive: true });
       }
 
       setTimeout(() => {
@@ -1148,9 +1148,9 @@ class MainMenu extends HTMLElement {
 
     this.mainDisclosure.addEventListener('transitionend', MainMenu.handleTransition.bind(this));
     this.mainToggle.addEventListener('click', this.handleMainMenuToggle.bind(this));
-    this.nav.addEventListener('touchstart', () => { this.isTouchEvent = true; });
+    this.nav.addEventListener('touchstart', () => { this.isTouchEvent = true; }, { passive: true });
     this.nav.addEventListener('click', MainMenu.handleNavClick.bind(this));
-    this.nav.addEventListener('touchend', () => setTimeout(() => { this.isTouchEvent = false; }, 100));
+    this.nav.addEventListener('touchend', () => setTimeout(() => { this.isTouchEvent = false; }, 100), { passive: true });
     window.addEventListener('focusin', this.focusOutHandler);
     window.addEventListener('on:breakpoint-change', this.breakpointChangeHandler);
 
@@ -1689,7 +1689,7 @@ class CarouselSlider extends HTMLElement {
       this.scrollHandler = debounce(this.handleScroll.bind(this));
       this.navClickHandler = this.handleNavClick.bind(this);
 
-      this.slider.addEventListener('scroll', this.scrollHandler);
+      this.slider.addEventListener('scroll', this.scrollHandler, { passive: true });
       this.nav.addEventListener('click', this.navClickHandler);
     }
 

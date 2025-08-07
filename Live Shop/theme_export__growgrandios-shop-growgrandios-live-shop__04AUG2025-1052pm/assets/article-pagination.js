@@ -36,7 +36,7 @@ if (!customElements.get('article-pagination')) {
 
     addListeners() {
       this.scrollHandler = this.scrollHandler || this.handleScroll.bind(this);
-      window.addEventListener('scroll', this.scrollHandler);
+      window.addEventListener('scroll', this.scrollHandler, { passive: true });
 
       if (this.paginationText && theme.device.hasHover) {
         this.mouseEnterHandler = this.mouseEnterHandler || this.handleMenuMouseEnter.bind(this);

@@ -34,7 +34,7 @@ class CarouselSlider extends HTMLElement {
     }
 
     this.initSlider();
-    window.addEventListener('on:breakpoint-change', this.handleBreakpointChange.bind(this));
+    window.addEventListener('on:breakpoint-change', this.handleBreakpointChange.bind(this), { passive: true });
   }
 
   initSlider() {
@@ -75,7 +75,7 @@ class CarouselSlider extends HTMLElement {
     this.scrollHandler = debounce(this.handleScroll.bind(this));
     this.navClickHandler = this.handleNavClick.bind(this);
 
-    this.slider.addEventListener('scroll', this.scrollHandler);
+    this.slider.addEventListener('scroll', this.scrollHandler, { passive: true });
     this.nav.addEventListener('click', this.navClickHandler);
   }
 

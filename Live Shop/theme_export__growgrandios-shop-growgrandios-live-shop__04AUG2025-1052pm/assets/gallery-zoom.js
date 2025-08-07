@@ -83,12 +83,12 @@ if (!customElements.get('gallery-zoom')) {
         this.querySelectorAll('.gallery-zoom__thumb').forEach((el) => {
           el.addEventListener('click', this.onThumbClick.bind(this));
         });
-        this.addEventListener('touchend', this.stopTrackingTouch.bind(this));
+        this.addEventListener('touchend', this.stopTrackingTouch.bind(this), { passive: true });
         this.addEventListener('touchmove', this.trackInputMovement.bind(this));
         this.addEventListener('mousemove', this.trackInputMovement.bind(this));
         this.addEventListener('wheel', this.trackWheel.bind(this));
         // prevent pan while swiping thumbnails
-        this.thumbContainer.addEventListener('touchmove', (evt) => evt.stopPropagation());
+        this.thumbContainer.addEventListener('touchmove', (evt) => evt.stopPropagation(), { passive: true });
         this.previousBtn.addEventListener('click', this.selectPreviousThumb.bind(this));
         this.nextBtn.addEventListener('click', this.selectNextThumb.bind(this));
         this.zoomContainer.addEventListener('click', this.onZoomContainerClick.bind(this));

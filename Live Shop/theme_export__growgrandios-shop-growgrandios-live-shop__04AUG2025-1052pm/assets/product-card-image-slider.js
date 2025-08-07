@@ -15,7 +15,7 @@ if (!customElements.get('product-card-image-slider')) {
       init() {
         super.init();
 
-        this.slider.addEventListener('scroll', this.scrollInProgress.bind(this));
+        this.slider.addEventListener('scroll', this.scrollInProgress.bind(this), { passive: true });
 
         // If swatches are enabled, mark the swatch anchors in the slideshow
         if (this.productCardSwatches) {
